@@ -731,8 +731,8 @@
                 </div>
                 <form id="login-form">
                     <div class="form-group">
-                        <label for="username">Username</label>
-                        <input type="text" id="username" required autocomplete="username">
+                        <label for="username">Email</label>
+                        <input type="email" id="username" required autocomplete="email" placeholder="user@example.com">
                     </div>
                     <div class="form-group">
                         <label for="password">Password</label>
@@ -971,12 +971,6 @@
             appId: "1:1090077459793:web:5a3fcaca4923dce511bf70"
         };
 
-        // Configuration
-        const CONFIG = {
-            username: 'amazon',
-            password: 'vsa2024'
-        };
-
         // Initialize Firebase
         let app, database, auth;
         let firebaseInitialized = false;
@@ -986,9 +980,9 @@
             database = firebase.database();
             auth = firebase.auth();
             firebaseInitialized = true;
-            console.log('Firebase initialized successfully');
+            console.log('✅ Firebase initialized successfully');
         } catch (error) {
-            console.error('Firebase initialization error:', error);
+            console.error('❌ Firebase initialization error:', error);
             firebaseInitialized = false;
         }
 
@@ -1033,56 +1027,73 @@
         // Authentication
         async function handleLogin(e) {
             e.preventDefault();
-            const username = document.getElementById('username').value;
+            const email = document.getElementById('username').value;
             const password = document.getElementById('password').value;
 
             if (!firebaseInitialized) {
-                document.getElementById('login-error').textContent = 'Firebase not configured. See FIREBASE_SETUP.md';
+                document.getElementById('login-error').textContent = 'Firebase not configured. See setup guide.';
                 document.getElementById('login-error').classList.remove('hidden');
                 return;
             }
 
-            if (username === CONFIG.username && password === CONFIG.password) {
-                try {
-                    showLoading('Connecting to cloud...');
-                    
-                    // Sign in anonymously to Firebase
-                    await auth.signInAnonymously();
-                    
-                    currentUser = { username: username };
-                    sessionStorage.setItem('vsa_logged_in', 'true');
-                    
-                    document.getElementById('login-error').classList.add('hidden');
-                    
-                    // Load data from Firebase
-                    await loadVehicleDataFromFirebase();
-                    
-                    hideLoading();
-                    showPage('upload-page');
-                    updateFirebaseStatus('connected');
-                } catch (error) {
-                    hideLoading();
-                    console.error('Firebase auth error:', error);
-                    document.getElementById('login-error').textContent = 'Cloud connection failed: ' + error.message;
-                    document.getElementById('login-error').classList.remove('hidden');
+            try {
+                showLoading('Authenticating...');
+                
+                // Sign in with Firebase Email/Password
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                
+                currentUser = { 
+                    username: email,
+                    uid: userCredential.user.uid 
+                };
+                
+                document.getElementById('login-error').classList.add('hidden');
+                
+                // Load data from Firebase
+                await loadVehicleDataFromFirebase();
+                
+                hideLoading();
+                showPage('upload-page');
+                updateFirebaseStatus('connected', `Logged in as: ${email}`);
+            } catch (error) {
+                hideLoading();
+                console.error('Authentication error:', error);
+                
+                let errorMessage = 'Login failed. ';
+                switch(error.code) {
+                    case 'auth/invalid-email':
+                        errorMessage += 'Invalid email format.';
+                        break;
+                    case 'auth/user-not-found':
+                        errorMessage += 'No account found with this email.';
+                        break;
+                    case 'auth/wrong-password':
+                        errorMessage += 'Incorrect password.';
+                        break;
+                    case 'auth/invalid-credential':
+                        errorMessage += 'Invalid email or password.';
+                        break;
+                    case 'auth/too-many-requests':
+                        errorMessage += 'Too many failed attempts. Try again later.';
+                        break;
+                    default:
+                        errorMessage += error.message;
                 }
-            } else {
-                document.getElementById('login-error').textContent = 'Invalid credentials';
+                
+                document.getElementById('login-error').textContent = errorMessage;
                 document.getElementById('login-error').classList.remove('hidden');
             }
         }
 
         function checkLoginStatus() {
-            const isLoggedIn = sessionStorage.getItem('vsa_logged_in');
-            if (isLoggedIn === 'true' && firebaseInitialized) {
-                auth.signInAnonymously().then(() => {
-                    loadVehicleDataFromFirebase().then(() => {
-                        showPage('upload-page');
-                        updateFirebaseStatus('connected');
-                    });
-                }).catch(error => {
-                    console.error('Auto-login failed:', error);
-                    showPage('login-page');
+            if (firebaseInitialized && auth.currentUser) {
+                currentUser = {
+                    username: auth.currentUser.email,
+                    uid: auth.currentUser.uid
+                };
+                loadVehicleDataFromFirebase().then(() => {
+                    showPage('upload-page');
+                    updateFirebaseStatus('connected', `Logged in as: ${auth.currentUser.email}`);
                 });
             } else {
                 showPage('login-page');
@@ -1090,7 +1101,6 @@
         }
 
         function logout() {
-            sessionStorage.removeItem('vsa_logged_in');
             if (auth) {
                 auth.signOut();
             }
