@@ -1,0 +1,1660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amazon VSA Audit System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Amazon Ember', Arial, sans-serif;
+            background: linear-gradient(135deg, #232F3E 0%, #131A22 100%);
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* Login Page */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .login-box {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            color: #FF9900;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .logo p {
+            color: #ccc;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ddd;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #FF9900;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+
+        .btn-primary {
+            background: #FF9900;
+            color: #131A22;
+        }
+
+        .btn-primary:hover {
+            background: #FFB84D;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 153, 0, 0.4);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: #138496;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header h2 {
+            color: #FF9900;
+            font-size: 24px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .header-actions button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        /* Upload Page */
+        .upload-section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .upload-section h3 {
+            color: #FF9900;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            display: none;
+        }
+
+        .file-input-label {
+            display: block;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-input-label:hover {
+            border-color: #FF9900;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .file-name {
+            color: #28a745;
+            margin-top: 5px;
+            font-size: 14px;
+        }
+
+        .status-message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        .status-success {
+            background: rgba(40, 167, 69, 0.2);
+            border: 1px solid #28a745;
+            color: #28a745;
+        }
+
+        .status-error {
+            background: rgba(220, 53, 69, 0.2);
+            border: 1px solid #dc3545;
+            color: #dc3545;
+        }
+
+        .status-info {
+            background: rgba(255, 153, 0, 0.2);
+            border: 1px solid #FF9900;
+            color: #FF9900;
+        }
+
+        /* Search Section */
+        .search-section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .autocomplete-wrapper {
+            position: relative;
+            z-index: 10000;
+        }
+
+        #license-plate-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 18px;
+            text-transform: uppercase;
+        }
+
+        #license-plate-input:focus {
+            outline: none;
+            border-color: #FF9900;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        #autocomplete-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #232F3E;
+            border: 2px solid #FF9900;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            max-height: 400px;
+            overflow-y: auto;
+            z-index: 10000;
+            display: none;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
+
+        .autocomplete-item {
+            padding: 12px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            transition: background 0.2s;
+        }
+
+        .autocomplete-item:hover {
+            background: rgba(255, 153, 0, 0.2);
+        }
+
+        .autocomplete-item strong {
+            color: #FF9900;
+        }
+
+        /* Vehicle Info */
+        .vehicle-info {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: none;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .vehicle-info.show {
+            display: block;
+            animation: slideIn 0.3s ease-in-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .info-row.last-audit-row {
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .info-row.last-audit-row.needs-vsa {
+            background: rgba(255, 193, 7, 0.15);
+            border: 3px solid #ffc107;
+            border-bottom: 3px solid #ffc107;
+            animation: pulseGlow 2s ease-in-out infinite;
+        }
+
+        .info-row.last-audit-row.already-audited {
+            background: rgba(40, 167, 69, 0.1);
+            border: 2px solid #28a745;
+            border-bottom: 2px solid #28a745;
+        }
+
+        .grounded-warning {
+            background: rgba(220, 53, 69, 0.2);
+            border: 3px solid #dc3545;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+            animation: pulseGroundedWarning 1.5s ease-in-out infinite;
+        }
+
+        .grounded-warning-text {
+            font-size: 22px;
+            font-weight: bold;
+            color: #dc3545;
+            text-align: center;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% {
+                box-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(255, 193, 7, 0.8);
+            }
+        }
+
+        @keyframes pulseGroundedWarning {
+            0%, 100% {
+                box-shadow: 0 0 15px rgba(220, 53, 69, 0.6);
+            }
+            50% {
+                box-shadow: 0 0 30px rgba(220, 53, 69, 1);
+            }
+        }
+
+        .info-label {
+            color: #aaa;
+            font-weight: bold;
+        }
+
+        .info-label.last-audit-label {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .info-label.last-audit-label.needs-vsa {
+            color: #ffc107;
+        }
+
+        .info-label.last-audit-label.already-audited {
+            color: #28a745;
+        }
+
+        .info-value {
+            color: #fff;
+            text-align: right;
+        }
+
+        .info-value.last-audit-value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .info-value.last-audit-value.needs-vsa {
+            color: #ffc107;
+        }
+
+        .info-value.last-audit-value.already-audited {
+            color: #28a745;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .badge-active {
+            background: #28a745;
+        }
+
+        .badge-grounded {
+            background: #dc3545;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .action-buttons button {
+            flex: 1;
+            padding: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+
+        .btn-van-ok {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-van-ok:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.6);
+        }
+
+        .btn-vsa-block {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
+        }
+
+        .btn-vsa-block:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(220, 53, 69, 0.6);
+        }
+
+        /* Problem Input */
+        .problem-section {
+            background: rgba(220, 53, 69, 0.1);
+            border: 2px solid #dc3545;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .problem-section.show {
+            display: block;
+        }
+
+        #problem-description {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+            resize: vertical;
+        }
+
+        /* QR Code Section */
+        .qr-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 20px;
+            text-align: center;
+            display: none;
+        }
+
+        .qr-section.show {
+            display: block;
+        }
+
+        .qr-section h3 {
+            color: #131A22;
+            margin-bottom: 20px;
+        }
+
+        #qr-code {
+            display: inline-block;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .qr-info {
+            color: #131A22;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        /* Download Page */
+        .download-section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: bold;
+            color: #FF9900;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #aaa;
+            font-size: 14px;
+        }
+
+        .download-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .download-buttons button {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #FF9900;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            position: absolute;
+            margin-top: 100px;
+            color: #FF9900;
+            font-size: 16px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .header-actions {
+                flex-direction: column;
+            }
+
+            .header-actions button {
+                width: 100%;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .download-buttons {
+                flex-direction: column;
+            }
+
+            .download-buttons button {
+                width: 100%;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .firebase-status {
+            background: rgba(66, 133, 244, 0.1);
+            border: 1px solid #4285f4;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .firebase-status.connected {
+            background: rgba(40, 167, 69, 0.1);
+            border-color: #28a745;
+        }
+
+        .firebase-status.error {
+            background: rgba(220, 53, 69, 0.1);
+            border-color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div>
+            <div class="spinner"></div>
+            <div class="loading-text" id="loading-text">Processing...</div>
+        </div>
+    </div>
+
+    <!-- Login Page -->
+    <div class="page active" id="login-page">
+        <div class="login-container">
+            <div class="login-box">
+                <div class="logo">
+                    <h1>🚐 VSA Audit</h1>
+                    <p>Vehicle Safety Audit System</p>
+                    <p style="font-size: 12px; margin-top: 10px; color: #FF9900;">Multi-User Cloud Database</p>
+                </div>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" required autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" required autocomplete="current-password">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </form>
+                <div id="login-error" class="status-message status-error hidden" style="margin-top: 15px;">
+                    Invalid credentials
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Page -->
+    <div class="page" id="upload-page">
+        <div class="container">
+            <div class="header">
+                <h2>📁 Data Management</h2>
+                <div class="header-actions">
+                    <button onclick="showPage('audit-page')" class="btn-primary">Go to Audit</button>
+                    <button onclick="showPage('download-page')" class="btn-secondary">View Reports</button>
+                    <button onclick="logout()" class="btn-danger">Logout</button>
+                </div>
+            </div>
+
+            <!-- Firebase Status -->
+            <div id="firebase-status" class="firebase-status" style="display: none;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="firebase-icon" style="font-size: 24px;">🔴</span>
+                    <div>
+                        <div id="firebase-text" style="font-weight: bold;"></div>
+                        <div id="firebase-detail" style="font-size: 12px; margin-top: 5px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="upload-section">
+                <h3>📊 Upload Data Files</h3>
+                <p style="color: #aaa; margin-bottom: 20px;">Upload files to update the shared database (all users will see changes)</p>
+
+                <div class="file-input-wrapper">
+                    <input type="file" id="dive-deep-file" accept=".csv" onchange="handleFileSelect(this, 'dive-deep')">
+                    <label for="dive-deep-file" class="file-input-label">
+                        📄 Click to select Dive Deep CSV
+                        <div class="file-name" id="dive-deep-name"></div>
+                    </label>
+                </div>
+
+                <div class="file-input-wrapper">
+                    <input type="file" id="vin-audit-file" accept=".xlsx" onchange="handleFileSelect(this, 'vin-audit')">
+                    <label for="vin-audit-file" class="file-input-label">
+                        📋 Click to select VIN Audit Detail XLSX
+                        <div class="file-name" id="vin-audit-name"></div>
+                    </label>
+                </div>
+
+                <div class="file-input-wrapper">
+                    <input type="file" id="grounded-file" accept=".xlsx" onchange="handleFileSelect(this, 'grounded')">
+                    <label for="grounded-file" class="file-input-label">
+                        🚫 Click to select Current Grounded XLSX
+                        <div class="file-name" id="grounded-name"></div>
+                    </label>
+                </div>
+
+                <button onclick="processFiles()" class="btn btn-primary" style="margin-top: 20px;">
+                    Process & Upload to Cloud
+                </button>
+
+                <div id="upload-status"></div>
+            </div>
+
+            <div class="upload-section">
+                <h3>📈 Current Database Status</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="total-vehicles">0</div>
+                        <div class="stat-label">Active Vehicles</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="grounded-count">0</div>
+                        <div class="stat-label">Grounded Vehicles</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="audited-count">0</div>
+                        <div class="stat-label">Recently Audited</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audit Page -->
+    <div class="page" id="audit-page">
+        <div class="container">
+            <div class="header">
+                <h2>🔍 VSA Audit</h2>
+                <div class="header-actions">
+                    <button onclick="showPage('upload-page')" class="btn-secondary">Data Management</button>
+                    <button onclick="clearAuditSearch()" class="btn-info">Clear Search</button>
+                    <button onclick="logout()" class="btn-danger">Logout</button>
+                </div>
+            </div>
+
+            <div class="search-section">
+                <h3>⌨️ Enter License Plate</h3>
+                <div class="autocomplete-wrapper">
+                    <input type="text" id="license-plate-input" placeholder="Type license plate (e.g., HB449JJ)..." autocomplete="off">
+                    <div id="autocomplete-list"></div>
+                </div>
+                <button onclick="searchVehicle()" class="btn btn-primary" style="width: 100%; margin-top: 15px;">
+                    🔍 Check Vehicle
+                </button>
+            </div>
+
+            <div class="vehicle-info" id="vehicle-info">
+                <h3>🚐 Vehicle Information</h3>
+                
+                <div class="grounded-warning" id="grounded-warning" style="display: none;">
+                    <div class="grounded-warning-text">
+                        🚫 VEHICLE GROUNDED 🚫<br>
+                        THIS VAN CANNOT GO OUT
+                    </div>
+                </div>
+                
+                <div class="info-row">
+                    <span class="info-label">License Plate:</span>
+                    <span class="info-value" id="info-plate"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">VIN:</span>
+                    <span class="info-value" id="info-vin"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">DSP:</span>
+                    <span class="info-value" id="info-dsp"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Status:</span>
+                    <span class="info-value" id="info-status"></span>
+                </div>
+                <div class="info-row last-audit-row">
+                    <span class="info-label last-audit-label">⚠️ Last Audit:</span>
+                    <span class="info-value last-audit-value" id="info-last-audit"></span>
+                </div>
+
+                <div class="action-buttons">
+                    <button onclick="vanOK()" class="btn-van-ok">✅ VAN OK</button>
+                    <button onclick="vsaBlock()" class="btn-vsa-block">❌ VSA TO BLOCK</button>
+                </div>
+            </div>
+
+            <div class="problem-section" id="problem-section">
+                <h3>⚠️ Describe the Problem</h3>
+                <textarea id="problem-description" placeholder="Enter the problem details..."></textarea>
+                <button onclick="submitProblem()" class="btn btn-primary" style="width: 100%; margin-top: 15px;">
+                    Continue to QR Code
+                </button>
+            </div>
+
+            <div class="qr-section" id="qr-section">
+                <h3 id="qr-title">QR Code Generated</h3>
+                <div id="qr-code"></div>
+                <div class="qr-info" id="qr-info"></div>
+                <button onclick="saveAudit()" class="btn btn-success" style="margin-top: 20px;">
+                    💾 Save Audit
+                </button>
+                <button onclick="clearAuditSearch()" class="btn btn-secondary" style="margin-top: 10px;">
+                    🔄 Check Another Vehicle
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Download Page -->
+    <div class="page" id="download-page">
+        <div class="container">
+            <div class="header">
+                <h2>📊 Reports & Analytics</h2>
+                <div class="header-actions">
+                    <button onclick="showPage('upload-page')" class="btn-secondary">Data Management</button>
+                    <button onclick="showPage('audit-page')" class="btn-primary">Go to Audit</button>
+                    <button onclick="logout()" class="btn-danger">Logout</button>
+                </div>
+            </div>
+
+            <div class="download-section">
+                <h3>📈 Audit Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="report-total-audits">0</div>
+                        <div class="stat-label">Total Audits</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="report-passed">0</div>
+                        <div class="stat-label">Passed (OK)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="report-failed">0</div>
+                        <div class="stat-label">Failed (Blocked)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="report-today">0</div>
+                        <div class="stat-label">Today's Audits</div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 30px;">📥 Download Reports</h3>
+                <div class="download-buttons">
+                    <button onclick="downloadAllAudits()" class="btn btn-primary">
+                        Download All Audits
+                    </button>
+                    <button onclick="downloadPassedOnly()" class="btn btn-success">
+                        Download Passed Only
+                    </button>
+                    <button onclick="downloadFailedOnly()" class="btn btn-danger">
+                        Download Failed Only
+                    </button>
+                </div>
+
+                <div id="download-status"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // FIREBASE CONFIGURATION
+        // TO SETUP: Follow FIREBASE_SETUP.md guide
+        const firebaseConfig = {
+            apiKey: "AIzaSyBpWSHW3fnPUvADjVxKNh5qpJ2lXkJNZRo",
+            authDomain: "vsa-app-13a1f.firebaseapp.com",
+            databaseURL: "https://vsa-app-13a1f-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "vsa-app-13a1f",
+            storageBucket: "vsa-app-13a1f.firebasestorage.app",
+            messagingSenderId: "1090077459793",
+            appId: "1:1090077459793:web:5a3fcaca4923dce511bf70"
+        };
+
+        // Configuration
+        const CONFIG = {
+            username: 'amazon',
+            password: 'vsa2024'
+        };
+
+        // Initialize Firebase
+        let app, database, auth;
+        let firebaseInitialized = false;
+
+        try {
+            app = firebase.initializeApp(firebaseConfig);
+            database = firebase.database();
+            auth = firebase.auth();
+            firebaseInitialized = true;
+            console.log('Firebase initialized successfully');
+        } catch (error) {
+            console.error('Firebase initialization error:', error);
+            firebaseInitialized = false;
+        }
+
+        // Global state
+        let vehicleDatabase = [];
+        let currentVehicle = null;
+        let auditResult = null;
+        let currentUser = null;
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+            checkLoginStatus();
+        });
+
+        function setupEventListeners() {
+            document.getElementById('login-form').addEventListener('submit', handleLogin);
+
+            const input = document.getElementById('license-plate-input');
+            input.addEventListener('input', handleAutocomplete);
+            input.addEventListener('keyup', function(e) {
+                if (e.key === 'Enter') {
+                    searchVehicle();
+                }
+            });
+            
+            input.addEventListener('focus', function() {
+                this.value = '';
+                this.placeholder = 'Type license plate (e.g., HB449JJ)...';
+                document.getElementById('vehicle-info').classList.remove('show');
+                document.getElementById('problem-section').classList.remove('show');
+                document.getElementById('qr-section').classList.remove('show');
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.autocomplete-wrapper')) {
+                    document.getElementById('autocomplete-list').style.display = 'none';
+                }
+            });
+        }
+
+        // Authentication
+        async function handleLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (!firebaseInitialized) {
+                document.getElementById('login-error').textContent = 'Firebase not configured. See FIREBASE_SETUP.md';
+                document.getElementById('login-error').classList.remove('hidden');
+                return;
+            }
+
+            if (username === CONFIG.username && password === CONFIG.password) {
+                try {
+                    showLoading('Connecting to cloud...');
+                    
+                    // Sign in anonymously to Firebase
+                    await auth.signInAnonymously();
+                    
+                    currentUser = { username: username };
+                    sessionStorage.setItem('vsa_logged_in', 'true');
+                    
+                    document.getElementById('login-error').classList.add('hidden');
+                    
+                    // Load data from Firebase
+                    await loadVehicleDataFromFirebase();
+                    
+                    hideLoading();
+                    showPage('upload-page');
+                    updateFirebaseStatus('connected');
+                } catch (error) {
+                    hideLoading();
+                    console.error('Firebase auth error:', error);
+                    document.getElementById('login-error').textContent = 'Cloud connection failed: ' + error.message;
+                    document.getElementById('login-error').classList.remove('hidden');
+                }
+            } else {
+                document.getElementById('login-error').textContent = 'Invalid credentials';
+                document.getElementById('login-error').classList.remove('hidden');
+            }
+        }
+
+        function checkLoginStatus() {
+            const isLoggedIn = sessionStorage.getItem('vsa_logged_in');
+            if (isLoggedIn === 'true' && firebaseInitialized) {
+                auth.signInAnonymously().then(() => {
+                    loadVehicleDataFromFirebase().then(() => {
+                        showPage('upload-page');
+                        updateFirebaseStatus('connected');
+                    });
+                }).catch(error => {
+                    console.error('Auto-login failed:', error);
+                    showPage('login-page');
+                });
+            } else {
+                showPage('login-page');
+            }
+        }
+
+        function logout() {
+            sessionStorage.removeItem('vsa_logged_in');
+            if (auth) {
+                auth.signOut();
+            }
+            currentUser = null;
+            vehicleDatabase = [];
+            showPage('login-page');
+        }
+
+        // Firebase Functions
+        async function loadVehicleDataFromFirebase() {
+            try {
+                const snapshot = await database.ref('vehicles').once('value');
+                const data = snapshot.val();
+                
+                if (data && Array.isArray(data)) {
+                    vehicleDatabase = data;
+                    console.log('Loaded', vehicleDatabase.length, 'vehicles from Firebase');
+                    updateDatabaseStats();
+                } else {
+                    vehicleDatabase = [];
+                    console.log('No vehicles in Firebase yet');
+                }
+            } catch (error) {
+                console.error('Error loading from Firebase:', error);
+                updateFirebaseStatus('error', error.message);
+            }
+        }
+
+        async function saveVehicleDataToFirebase() {
+            try {
+                showLoading('Saving to cloud...');
+                await database.ref('vehicles').set(vehicleDatabase);
+                hideLoading();
+                updateFirebaseStatus('connected', `${vehicleDatabase.length} vehicles synced`);
+                return true;
+            } catch (error) {
+                hideLoading();
+                console.error('Error saving to Firebase:', error);
+                updateFirebaseStatus('error', error.message);
+                return false;
+            }
+        }
+
+        async function saveAuditToFirebase(audit) {
+            try {
+                const auditRef = database.ref('audits').push();
+                await auditRef.set(audit);
+                return true;
+            } catch (error) {
+                console.error('Error saving audit:', error);
+                return false;
+            }
+        }
+
+        function updateFirebaseStatus(status, detail = '') {
+            const statusDiv = document.getElementById('firebase-status');
+            const iconSpan = document.getElementById('firebase-icon');
+            const textDiv = document.getElementById('firebase-text');
+            const detailDiv = document.getElementById('firebase-detail');
+
+            statusDiv.style.display = 'flex';
+            statusDiv.className = 'firebase-status ' + status;
+
+            switch(status) {
+                case 'connected':
+                    iconSpan.textContent = '🟢';
+                    textDiv.textContent = 'Connected to Cloud Database';
+                    textDiv.style.color = '#28a745';
+                    detailDiv.textContent = detail || 'All users share this database';
+                    break;
+                case 'error':
+                    iconSpan.textContent = '🔴';
+                    textDiv.textContent = 'Cloud Connection Error';
+                    textDiv.style.color = '#dc3545';
+                    detailDiv.textContent = detail;
+                    break;
+                case 'syncing':
+                    iconSpan.textContent = '🟡';
+                    textDiv.textContent = 'Syncing...';
+                    textDiv.style.color = '#ffc107';
+                    detailDiv.textContent = detail;
+                    break;
+            }
+        }
+
+        // Page Navigation
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+
+            if (pageId === 'upload-page') {
+                updateDatabaseStats();
+            } else if (pageId === 'download-page') {
+                updateReportStats();
+            }
+        }
+
+        // File Upload and Processing
+        let uploadedFiles = {
+            'dive-deep': null,
+            'vin-audit': null,
+            'grounded': null
+        };
+
+        function handleFileSelect(input, fileType) {
+            const file = input.files[0];
+            if (file) {
+                uploadedFiles[fileType] = file;
+                document.getElementById(fileType + '-name').textContent = '✓ ' + file.name;
+            }
+        }
+
+        async function processFiles() {
+            if (!uploadedFiles['dive-deep'] || !uploadedFiles['vin-audit'] || !uploadedFiles['grounded']) {
+                showStatus('upload-status', 'Please upload all three files', 'error');
+                return;
+            }
+
+            showLoading('Processing files...');
+
+            try {
+                const diveDeepData = await readCSV(uploadedFiles['dive-deep']);
+                const vinAuditData = await readExcel(uploadedFiles['vin-audit'], 5);
+                const groundedData = await readExcel(uploadedFiles['grounded'], 2);
+
+                buildVehicleDatabase(diveDeepData, vinAuditData, groundedData);
+
+                // Save to Firebase
+                const saved = await saveVehicleDataToFirebase();
+                
+                hideLoading();
+                
+                if (saved) {
+                    showStatus('upload-status', `✅ Success! ${vehicleDatabase.length} vehicles uploaded to cloud. All users can now access this data.`, 'success');
+                    updateDatabaseStats();
+                } else {
+                    showStatus('upload-status', '⚠️ Processed locally but cloud save failed. Check Firebase connection.', 'error');
+                }
+
+            } catch (error) {
+                hideLoading();
+                showStatus('upload-status', 'Error processing files: ' + error.message, 'error');
+                console.error(error);
+            }
+        }
+
+        function readCSV(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const text = e.target.result;
+                    const lines = text.split('\n');
+                    const data = [];
+                    
+                    for (let i = 1; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (line) {
+                            const values = line.split(',');
+                            data.push({
+                                dsp: values[2],
+                                vin: values[4],
+                                licensePlate: values[5],
+                                status: values[6]
+                            });
+                        }
+                    }
+                    resolve(data);
+                };
+                reader.onerror = reject;
+                reader.readAsText(file);
+            });
+        }
+
+        function readExcel(file, skipRows) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { 
+                            header: 1,
+                            defval: null
+                        });
+                        resolve(jsonData.slice(skipRows));
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        function buildVehicleDatabase(diveDeep, vinAudit, grounded) {
+            vehicleDatabase = [];
+
+            const vinAuditMap = new Map();
+            vinAudit.forEach(row => {
+                if (row[6]) {
+                    vinAuditMap.set(row[6], row[10]);
+                }
+            });
+
+            const groundedSet = new Set();
+            grounded.forEach(row => {
+                if (row[6]) {
+                    groundedSet.add(row[6]);
+                }
+            });
+
+            diveDeep.forEach(vehicle => {
+                if (vehicle.vin && vehicle.licensePlate) {
+                    vehicleDatabase.push({
+                        vin: vehicle.vin,
+                        licensePlate: vehicle.licensePlate.toUpperCase(),
+                        dsp: vehicle.dsp,
+                        status: vehicle.status,
+                        isGrounded: groundedSet.has(vehicle.vin),
+                        lastAudit: vinAuditMap.get(vehicle.vin) || null
+                    });
+                }
+            });
+
+            console.log('Vehicle database built:', vehicleDatabase.length, 'vehicles');
+        }
+
+        function updateDatabaseStats() {
+            document.getElementById('total-vehicles').textContent = vehicleDatabase.length;
+            document.getElementById('grounded-count').textContent = 
+                vehicleDatabase.filter(v => v.isGrounded).length;
+            document.getElementById('audited-count').textContent = 
+                vehicleDatabase.filter(v => v.lastAudit).length;
+        }
+
+        // Autocomplete
+        function handleAutocomplete() {
+            const input = document.getElementById('license-plate-input');
+            const value = input.value.toUpperCase();
+            const list = document.getElementById('autocomplete-list');
+
+            if (value.length > 0) {
+                document.getElementById('vehicle-info').classList.remove('show');
+                document.getElementById('problem-section').classList.remove('show');
+                document.getElementById('qr-section').classList.remove('show');
+            }
+
+            if (value.length < 2) {
+                list.style.display = 'none';
+                return;
+            }
+
+            const matches = vehicleDatabase.filter(v => 
+                v.licensePlate.includes(value)
+            ).slice(0, 10);
+
+            if (matches.length === 0) {
+                list.style.display = 'none';
+                return;
+            }
+
+            list.innerHTML = matches.map(v => `
+                <div class="autocomplete-item" onclick="selectVehicle('${v.licensePlate}')">
+                    <strong>${v.licensePlate}</strong> - ${v.dsp} - VIN: ${v.vin.substr(-6)}
+                </div>
+            `).join('');
+
+            list.style.display = 'block';
+        }
+
+        function selectVehicle(licensePlate) {
+            document.getElementById('license-plate-input').value = licensePlate;
+            document.getElementById('autocomplete-list').style.display = 'none';
+            searchVehicle();
+        }
+
+        function searchVehicle() {
+            const plate = document.getElementById('license-plate-input').value.toUpperCase().trim();
+            
+            if (!plate) {
+                alert('Please enter a license plate');
+                return;
+            }
+
+            const vehicle = vehicleDatabase.find(v => v.licensePlate === plate);
+
+            if (!vehicle) {
+                alert('Vehicle not found in database');
+                return;
+            }
+
+            currentVehicle = vehicle;
+            displayVehicleInfo(vehicle);
+        }
+
+        function displayVehicleInfo(vehicle) {
+            document.getElementById('info-plate').textContent = vehicle.licensePlate;
+            document.getElementById('info-vin').textContent = vehicle.vin;
+            document.getElementById('info-dsp').textContent = vehicle.dsp;
+            
+            const groundedWarning = document.getElementById('grounded-warning');
+            if (vehicle.isGrounded) {
+                groundedWarning.style.display = 'block';
+            } else {
+                groundedWarning.style.display = 'none';
+            }
+            
+            let statusHtml = '<span class="status-badge badge-active">ACTIVE</span>';
+            if (vehicle.isGrounded) {
+                statusHtml = '<span class="status-badge badge-grounded">GROUNDED</span>';
+            }
+            document.getElementById('info-status').innerHTML = statusHtml;
+            
+            const lastAuditRow = document.querySelector('.last-audit-row');
+            const lastAuditLabel = document.querySelector('.last-audit-label');
+            const lastAuditValue = document.getElementById('info-last-audit');
+            
+            lastAuditRow.classList.remove('needs-vsa', 'already-audited');
+            lastAuditLabel.classList.remove('needs-vsa', 'already-audited');
+            lastAuditValue.classList.remove('needs-vsa', 'already-audited');
+            
+            if (vehicle.lastAudit) {
+                lastAuditRow.classList.add('already-audited');
+                lastAuditLabel.classList.add('already-audited');
+                lastAuditValue.classList.add('already-audited');
+                lastAuditLabel.innerHTML = '✅ Last Audit:';
+                lastAuditValue.textContent = vehicle.lastAudit;
+            } else {
+                lastAuditRow.classList.add('needs-vsa');
+                lastAuditLabel.classList.add('needs-vsa');
+                lastAuditValue.classList.add('needs-vsa');
+                lastAuditLabel.innerHTML = '⚠️ Last Audit:';
+                lastAuditValue.textContent = 'NOT AUDITED YET - VSA REQUIRED';
+            }
+
+            document.getElementById('vehicle-info').classList.add('show');
+            document.getElementById('autocomplete-list').style.display = 'none';
+        }
+
+        function clearAuditSearch() {
+            currentVehicle = null;
+            auditResult = null;
+            document.getElementById('license-plate-input').value = '';
+            document.getElementById('license-plate-input').focus();
+            document.getElementById('problem-description').value = '';
+            document.getElementById('vehicle-info').classList.remove('show');
+            document.getElementById('problem-section').classList.remove('show');
+            document.getElementById('qr-section').classList.remove('show');
+            document.getElementById('autocomplete-list').style.display = 'none';
+        }
+
+        // Audit Actions
+        function vanOK() {
+            if (!currentVehicle) return;
+
+            document.getElementById('problem-section').classList.remove('show');
+            document.getElementById('problem-description').value = '';
+
+            auditResult = {
+                result: 'PASSED',
+                problem: null
+            };
+
+            generateQRCode();
+        }
+
+        function vsaBlock() {
+            if (!currentVehicle) return;
+
+            document.getElementById('problem-section').classList.add('show');
+            document.getElementById('qr-section').classList.remove('show');
+        }
+
+        function submitProblem() {
+            const problem = document.getElementById('problem-description').value.trim();
+            
+            if (!problem) {
+                alert('Please describe the problem');
+                return;
+            }
+
+            auditResult = {
+                result: 'FAILED',
+                problem: problem
+            };
+
+            document.getElementById('problem-section').classList.remove('show');
+            generateQRCode();
+        }
+
+        function generateQRCode() {
+            const qrDiv = document.getElementById('qr-code');
+            qrDiv.innerHTML = '';
+
+            const qrData = JSON.stringify({
+                vin: currentVehicle.vin,
+                licensePlate: currentVehicle.licensePlate,
+                dsp: currentVehicle.dsp,
+                result: auditResult.result,
+                problem: auditResult.problem,
+                timestamp: new Date().toISOString()
+            });
+
+            new QRCode(qrDiv, {
+                text: qrData,
+                width: 256,
+                height: 256,
+                colorDark: '#000000',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            const title = auditResult.result === 'PASSED' ? 
+                '✅ Van OK - QR Code' : 
+                '❌ VSA Blocked - QR Code';
+            
+            document.getElementById('qr-title').textContent = title;
+            document.getElementById('qr-info').innerHTML = `
+                VIN: ${currentVehicle.vin}<br>
+                License Plate: ${currentVehicle.licensePlate}<br>
+                DSP: ${currentVehicle.dsp}<br>
+                Result: ${auditResult.result}
+            `;
+
+            document.getElementById('qr-section').classList.add('show');
+        }
+
+        async function saveAudit() {
+            if (!currentVehicle || !auditResult) return;
+
+            const audit = {
+                id: Date.now(),
+                vin: currentVehicle.vin,
+                licensePlate: currentVehicle.licensePlate,
+                dsp: currentVehicle.dsp,
+                result: auditResult.result,
+                problem: auditResult.problem,
+                timestamp: new Date().toISOString(),
+                date: new Date().toLocaleDateString(),
+                time: new Date().toLocaleTimeString(),
+                user: currentUser ? currentUser.username : 'unknown'
+            };
+
+            // Save to Firebase
+            const saved = await saveAuditToFirebase(audit);
+            
+            if (saved) {
+                alert('✅ Audit saved to cloud database!');
+            } else {
+                alert('⚠️ Audit saved locally but cloud save failed');
+            }
+
+            setTimeout(() => {
+                clearAuditSearch();
+            }, 500);
+        }
+
+        // Reports
+        async function updateReportStats() {
+            try {
+                const snapshot = await database.ref('audits').once('value');
+                const audits = [];
+                snapshot.forEach(child => {
+                    audits.push(child.val());
+                });
+
+                const today = new Date().toLocaleDateString();
+
+                document.getElementById('report-total-audits').textContent = audits.length;
+                document.getElementById('report-passed').textContent = 
+                    audits.filter(a => a.result === 'PASSED').length;
+                document.getElementById('report-failed').textContent = 
+                    audits.filter(a => a.result === 'FAILED').length;
+                document.getElementById('report-today').textContent = 
+                    audits.filter(a => a.date === today).length;
+            } catch (error) {
+                console.error('Error loading audit stats:', error);
+            }
+        }
+
+        async function downloadAllAudits() {
+            await downloadAudits('all');
+        }
+
+        async function downloadPassedOnly() {
+            await downloadAudits('passed');
+        }
+
+        async function downloadFailedOnly() {
+            await downloadAudits('failed');
+        }
+
+        async function downloadAudits(type) {
+            try {
+                showLoading('Loading audit data...');
+                
+                const snapshot = await database.ref('audits').once('value');
+                let audits = [];
+                snapshot.forEach(child => {
+                    audits.push(child.val());
+                });
+
+                if (type === 'passed') {
+                    audits = audits.filter(a => a.result === 'PASSED');
+                } else if (type === 'failed') {
+                    audits = audits.filter(a => a.result === 'FAILED');
+                }
+
+                hideLoading();
+
+                if (audits.length === 0) {
+                    alert('No audits to download');
+                    return;
+                }
+
+                const headers = ['ID', 'Date', 'Time', 'License Plate', 'VIN', 'DSP', 'Result', 'Problem', 'User'];
+                const rows = audits.map(a => [
+                    a.id,
+                    a.date,
+                    a.time,
+                    a.licensePlate,
+                    a.vin,
+                    a.dsp,
+                    a.result,
+                    a.problem || '',
+                    a.user || ''
+                ]);
+
+                const csv = [headers, ...rows].map(row => 
+                    row.map(cell => `"${cell}"`).join(',')
+                ).join('\n');
+
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `vsa_audits_${type}_${new Date().toISOString().split('T')[0]}.csv`;
+                a.click();
+
+                showStatus('download-status', `Downloaded ${audits.length} audit records`, 'success');
+            } catch (error) {
+                hideLoading();
+                console.error('Error downloading audits:', error);
+                alert('Error downloading audits: ' + error.message);
+            }
+        }
+
+        // Utility Functions
+        function showStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.className = 'status-message status-' + type;
+            element.textContent = message;
+            element.style.display = 'block';
+        }
+
+        function showLoading(text) {
+            document.getElementById('loading-text').textContent = text;
+            document.getElementById('loading-overlay').classList.add('show');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-overlay').classList.remove('show');
+        }
+    </script>
+</body>
+</html>
