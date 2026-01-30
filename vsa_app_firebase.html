@@ -821,6 +821,23 @@
                         <div class="stat-label">Recently Audited</div>
                     </div>
                 </div>
+
+                <h3 style="margin-top: 30px;">🗑️ Database Management</h3>
+                <p style="color: #aaa; margin-bottom: 20px;">Clear databases to start fresh (affects all users)</p>
+                
+                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <button onclick="clearVehicleDatabase()" class="btn btn-danger" style="flex: 1; min-width: 200px;">
+                        🗑️ Clear Vehicle Database
+                    </button>
+                    <button onclick="clearAuditDatabase()" class="btn btn-danger" style="flex: 1; min-width: 200px;">
+                        🗑️ Clear Audit Database
+                    </button>
+                    <button onclick="clearAllDatabases()" class="btn btn-danger" style="flex: 1; min-width: 200px;">
+                        ⚠️ Clear Everything
+                    </button>
+                </div>
+                
+                <div id="clear-status"></div>
             </div>
         </div>
     </div>
@@ -1219,9 +1236,75 @@
                 return;
             }
 
-            showLoading('Processing files...');
+            // Validate filenames
+            const diveDeepFile = uploadedFiles['dive-deep'].name.toLowerCase();
+            const vinAuditFile = uploadedFiles['vin-audit'].name.toLowerCase();
+            const groundedFile = uploadedFiles['grounded'].name.toLowerCase();
+
+            let validationErrors = [];
+
+            // Check Dive Deep CSV
+            if (!diveDeepFile.includes('dive') && !diveDeepFile.includes('deep')) {
+                validationErrors.push('❌ Dive Deep file should contain "dive" or "deep" in filename');
+            }
+            if (!diveDeepFile.endsWith('.csv')) {
+                validationErrors.push('❌ Dive Deep file must be a CSV file (.csv)');
+            }
+
+            // Check VIN Audit Detail XLSX
+            if (!vinAuditFile.includes('vin') || !vinAuditFile.includes('audit')) {
+                validationErrors.push('❌ VIN Audit file should contain "vin" and "audit" in filename');
+            }
+            if (!vinAuditFile.endsWith('.xlsx') && !vinAuditFile.endsWith('.xls')) {
+                validationErrors.push('❌ VIN Audit file must be an Excel file (.xlsx or .xls)');
+            }
+
+            // Check Current Grounded XLSX
+            if (!groundedFile.includes('ground')) {
+                validationErrors.push('❌ Grounded file should contain "ground" in filename');
+            }
+            if (!groundedFile.endsWith('.xlsx') && !groundedFile.endsWith('.xls')) {
+                validationErrors.push('❌ Grounded file must be an Excel file (.xlsx or .xls)');
+            }
+
+            // Show validation errors if any
+            if (validationErrors.length > 0) {
+                const errorMessage = 'File validation failed:\n\n' + validationErrors.join('\n') + 
+                    '\n\nPlease upload the correct files:\n' +
+                    '1. Dive Deep CSV (contains "dive" or "deep")\n' +
+                    '2. VIN Audit Detail XLSX (contains "vin" and "audit")\n' +
+                    '3. Current Grounded XLSX (contains "ground")';
+                
+                alert(errorMessage);
+                showStatus('upload-status', validationErrors.join('<br>'), 'error');
+                return;
+            }
+
+            // Confirm before clearing all data (new cycle starts)
+            const confirmClear = confirm(
+                '⚠️ NEW CYCLE STARTING ⚠️\n\n' +
+                'Uploading new files will:\n' +
+                '• Clear ALL vehicle data\n' +
+                '• Clear ALL audit records\n' +
+                '• Start fresh for new cycle\n\n' +
+                'This affects ALL USERS!\n\n' +
+                'Are you sure you want to continue?'
+            );
+
+            if (!confirmClear) {
+                showStatus('upload-status', 'Upload cancelled by user', 'info');
+                return;
+            }
+
+            showLoading('Clearing old data...');
 
             try {
+                // Clear all databases first (new cycle)
+                await database.ref('vehicles').remove();
+                await database.ref('audits').remove();
+                
+                showLoading('Processing files...');
+
                 const diveDeepData = await readCSV(uploadedFiles['dive-deep']);
                 const vinAuditData = await readExcel(uploadedFiles['vin-audit'], 5);
                 const groundedData = await readExcel(uploadedFiles['grounded'], 2);
@@ -1234,7 +1317,14 @@
                 hideLoading();
                 
                 if (saved) {
-                    showStatus('upload-status', `✅ Success! ${vehicleDatabase.length} vehicles uploaded to cloud. All users can now access this data.`, 'success');
+                    showStatus('upload-status', 
+                        `✅ NEW CYCLE STARTED!\n\n` +
+                        `• Old data cleared\n` +
+                        `• ${vehicleDatabase.length} vehicles uploaded\n` +
+                        `• All users will see new data\n` +
+                        `• Fresh start for new cycle`, 
+                        'success'
+                    );
                     updateDatabaseStats();
                 } else {
                     showStatus('upload-status', '⚠️ Processed locally but cloud save failed. Check Firebase connection.', 'error');
@@ -1335,6 +1425,130 @@
                 vehicleDatabase.filter(v => v.isGrounded).length;
             document.getElementById('audited-count').textContent = 
                 vehicleDatabase.filter(v => v.lastAudit).length;
+        }
+
+        // Database Clearing Functions
+        async function clearVehicleDatabase() {
+            const confirm = window.confirm(
+                '⚠️ CLEAR VEHICLE DATABASE ⚠️\n\n' +
+                'This will delete:\n' +
+                '• All vehicle data\n' +
+                '• All license plates\n' +
+                '• All VINs\n\n' +
+                'This affects ALL USERS!\n' +
+                'Audits will NOT be deleted.\n\n' +
+                'Are you sure?'
+            );
+
+            if (!confirm) return;
+
+            try {
+                showLoading('Clearing vehicle database...');
+                
+                // Clear from Firebase
+                await database.ref('vehicles').remove();
+                
+                // Clear local
+                vehicleDatabase = [];
+                
+                hideLoading();
+                updateDatabaseStats();
+                showStatus('clear-status', '✅ Vehicle database cleared! All users updated.', 'success');
+            } catch (error) {
+                hideLoading();
+                console.error('Error clearing vehicle database:', error);
+                showStatus('clear-status', '❌ Error clearing database: ' + error.message, 'error');
+            }
+        }
+
+        async function clearAuditDatabase() {
+            const confirm = window.confirm(
+                '⚠️ CLEAR AUDIT DATABASE ⚠️\n\n' +
+                'This will delete:\n' +
+                '• All audit records\n' +
+                '• All inspection history\n' +
+                '• All QR codes generated\n\n' +
+                'This affects ALL USERS!\n' +
+                'Vehicle data will NOT be deleted.\n\n' +
+                'Are you sure?'
+            );
+
+            if (!confirm) return;
+
+            try {
+                showLoading('Clearing audit database...');
+                
+                // Clear from Firebase
+                await database.ref('audits').remove();
+                
+                hideLoading();
+                showStatus('clear-status', '✅ Audit database cleared! All users updated.', 'success');
+                
+                // Refresh report stats if on reports page
+                if (document.getElementById('download-page').classList.contains('active')) {
+                    updateReportStats();
+                }
+            } catch (error) {
+                hideLoading();
+                console.error('Error clearing audit database:', error);
+                showStatus('clear-status', '❌ Error clearing database: ' + error.message, 'error');
+            }
+        }
+
+        async function clearAllDatabases() {
+            const confirm = window.confirm(
+                '⚠️⚠️⚠️ CLEAR EVERYTHING ⚠️⚠️⚠️\n\n' +
+                'This will delete:\n' +
+                '• ALL vehicle data\n' +
+                '• ALL audit records\n' +
+                '• EVERYTHING in the system\n\n' +
+                'This affects ALL USERS!\n' +
+                'Cannot be undone!\n\n' +
+                'Are you ABSOLUTELY sure?'
+            );
+
+            if (!confirm) return;
+
+            // Double confirmation for safety
+            const doubleConfirm = window.confirm(
+                'FINAL CONFIRMATION\n\n' +
+                'This will permanently delete all data.\n' +
+                'Type YES in the next prompt to confirm.'
+            );
+
+            if (!doubleConfirm) return;
+
+            const typedConfirmation = prompt('Type "DELETE ALL" to confirm (case sensitive):');
+            
+            if (typedConfirmation !== 'DELETE ALL') {
+                alert('Confirmation failed. No data was deleted.');
+                showStatus('clear-status', 'Clear cancelled - wrong confirmation text', 'info');
+                return;
+            }
+
+            try {
+                showLoading('Clearing all databases...');
+                
+                // Clear everything from Firebase
+                await database.ref('vehicles').remove();
+                await database.ref('audits').remove();
+                
+                // Clear local
+                vehicleDatabase = [];
+                
+                hideLoading();
+                updateDatabaseStats();
+                showStatus('clear-status', '✅ All databases cleared! System reset complete. All users updated.', 'success');
+                
+                // Refresh report stats if on reports page
+                if (document.getElementById('download-page').classList.contains('active')) {
+                    updateReportStats();
+                }
+            } catch (error) {
+                hideLoading();
+                console.error('Error clearing databases:', error);
+                showStatus('clear-status', '❌ Error clearing databases: ' + error.message, 'error');
+            }
         }
 
         // Autocomplete
