@@ -328,244 +328,334 @@
             color: #FF9900;
         }
 
-        /* Vehicle Info */
-        .vehicle-info {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
+        /* ── Audit page: step-based single-screen ── */
+        #audit-page .container {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 0px);
+            max-height: 100vh;
+            overflow: hidden;
+            padding: 0;
+        }
+
+        #audit-page .header {
+            flex-shrink: 0;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        #audit-page .header h2 {
+            font-size: 18px;
+            margin: 0;
+            white-space: nowrap;
+        }
+
+        #audit-page .header-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        #audit-page .header-actions button {
+            padding: 6px 10px;
+            font-size: 12px;
+        }
+
+        /* Step panels: only one visible at a time, fills remaining space */
+        .audit-step {
             display: none;
-            transition: all 0.3s ease-in-out;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+            padding: 12px 16px 16px;
         }
 
-        .vehicle-info.show {
-            display: block;
-            animation: slideIn 0.3s ease-in-out;
+        .audit-step.active {
+            display: flex;
         }
 
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        /* Step 1: Search */
+        #step-search {
+            justify-content: center;
+        }
+
+        #step-search .search-section {
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        /* Step 2: Vehicle info — fills screen, buttons pinned at bottom */
+        #step-vehicle {
+            justify-content: flex-start;
+        }
+
+        .vehicle-info-card {
+            flex: 1;
+            background: rgba(255,255,255,0.07);
+            border-radius: 14px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            overflow: hidden;
+        }
+
+        .vehicle-info-card .grounded-warning {
+            background: rgba(220,53,69,0.2);
+            border: 3px solid #dc3545;
+            border-radius: 12px;
+            padding: 14px;
+            animation: pulseGroundedWarning 1.5s ease-in-out infinite;
+            text-align: center;
+        }
+
+        .vehicle-info-card .grounded-warning-text {
+            font-size: 20px;
+            font-weight: bold;
+            color: #dc3545;
         }
 
         .info-row {
             display: flex;
             justify-content: space-between;
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
         }
 
-        .info-row.last-audit-row {
-            border-radius: 12px;
-            padding: 20px;
-            margin: 15px 0;
-        }
-
-        .info-row.last-audit-row.needs-vsa {
-            background: rgba(255, 193, 7, 0.15);
-            border: 3px solid #ffc107;
-            border-bottom: 3px solid #ffc107;
-            animation: pulseGlow 2s ease-in-out infinite;
-        }
-
-        .info-row.last-audit-row.already-audited {
-            background: rgba(40, 167, 69, 0.1);
-            border: 2px solid #28a745;
-            border-bottom: 2px solid #28a745;
-        }
-
-        .grounded-warning {
-            background: rgba(220, 53, 69, 0.2);
-            border: 3px solid #dc3545;
-            border-radius: 12px;
-            padding: 20px;
-            margin: 15px 0;
-            animation: pulseGroundedWarning 1.5s ease-in-out infinite;
-        }
-
-        .grounded-warning-text {
-            font-size: 22px;
-            font-weight: bold;
-            color: #dc3545;
-            text-align: center;
-        }
-
-        @keyframes pulseGlow {
-            0%, 100% {
-                box-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
-            }
-            50% {
-                box-shadow: 0 0 20px rgba(255, 193, 7, 0.8);
-            }
-        }
-
-        @keyframes pulseGroundedWarning {
-            0%, 100% {
-                box-shadow: 0 0 15px rgba(220, 53, 69, 0.6);
-            }
-            50% {
-                box-shadow: 0 0 30px rgba(220, 53, 69, 1);
-            }
+        .info-row:last-of-type {
+            border-bottom: none;
         }
 
         .info-label {
             color: #aaa;
             font-weight: bold;
-        }
-
-        .info-label.last-audit-label {
-            font-size: 20px;
-            font-weight: bold;
-        }
-
-        .info-label.last-audit-label.needs-vsa {
-            color: #ffc107;
-        }
-
-        .info-label.last-audit-label.already-audited {
-            color: #28a745;
+            font-size: 14px;
         }
 
         .info-value {
             color: #fff;
-            text-align: right;
+            font-size: 15px;
+            font-weight: 600;
         }
 
-        .info-value.last-audit-value {
-            font-size: 24px;
+        /* Last audit row highlight */
+        .last-audit-box {
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-top: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .last-audit-box.needs-vsa {
+            background: rgba(255,193,7,0.15);
+            border: 2px solid #ffc107;
+            animation: pulseGlow 2s ease-in-out infinite;
+        }
+
+        .last-audit-box.already-audited {
+            background: rgba(40,167,69,0.1);
+            border: 2px solid #28a745;
+        }
+
+        .last-audit-box .info-label { font-size: 15px; }
+        .last-audit-box .info-value { font-size: 18px; font-weight: bold; }
+        .last-audit-box.needs-vsa .info-label,
+        .last-audit-box.needs-vsa .info-value { color: #ffc107; }
+        .last-audit-box.already-audited .info-label,
+        .last-audit-box.already-audited .info-value { color: #28a745; }
+
+        /* Decision buttons: big, pinned at bottom */
+        .decision-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: auto;
+            padding-top: 14px;
+            flex-shrink: 0;
+        }
+
+        .decision-buttons button {
+            flex: 1;
+            padding: 18px 10px;
+            font-size: 17px;
             font-weight: bold;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            text-transform: uppercase;
+            color: #fff;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .info-value.last-audit-value.needs-vsa {
-            color: #ffc107;
+        .btn-van-ok {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            box-shadow: 0 4px 15px rgba(40,167,69,0.4);
         }
 
-        .info-value.last-audit-value.already-audited {
-            color: #28a745;
+        .btn-vsa-block {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            box-shadow: 0 4px 15px rgba(220,53,69,0.4);
+        }
+
+        /* Step 3a: Problem input (VSA BLOCK path) */
+        #step-problem {
+            justify-content: flex-start;
+        }
+
+        .problem-card {
+            flex: 1;
+            background: rgba(220,53,69,0.1);
+            border: 2px solid #dc3545;
+            border-radius: 14px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .problem-card h3 {
+            margin: 0 0 12px;
+            color: #dc3545;
+            font-size: 17px;
+        }
+
+        #problem-description {
+            flex: 1;
+            width: 100%;
+            min-height: 0;
+            padding: 12px;
+            border: 2px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+            resize: none;
+            outline: none;
+        }
+
+        #problem-description:focus {
+            border-color: #dc3545;
+        }
+
+        .problem-card .btn-submit-problem {
+            margin-top: 12px;
+            padding: 16px;
+            background: #dc3545;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: bold;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .problem-card .btn-back {
+            margin-top: 8px;
+            padding: 10px;
+            background: transparent;
+            color: #aaa;
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        /* Step 4: QR overlay — full screen */
+        .qr-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 5000;
+            background: #fff;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            gap: 12px;
+        }
+
+        .qr-overlay.show {
+            display: flex;
+        }
+
+        .qr-overlay-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #131A22;
+            text-align: center;
+        }
+
+        .qr-overlay-title.passed { color: #28a745; }
+        .qr-overlay-title.failed { color: #dc3545; }
+
+        #qr-code {
+            display: inline-block;
+        }
+
+        .qr-overlay-info {
+            color: #444;
+            font-size: 14px;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .qr-overlay-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+            max-width: 280px;
+            margin-top: 8px;
+        }
+
+        .qr-overlay-buttons .btn-save {
+            padding: 16px;
+            background: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .qr-overlay-buttons .btn-next {
+            padding: 12px;
+            background: transparent;
+            color: #666;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 10px rgba(255,193,7,0.5); }
+            50%      { box-shadow: 0 0 20px rgba(255,193,7,0.8); }
+        }
+
+        @keyframes pulseGroundedWarning {
+            0%, 100% { box-shadow: 0 0 15px rgba(220,53,69,0.6); }
+            50%      { box-shadow: 0 0 30px rgba(220,53,69,1); }
         }
 
         .status-badge {
             display: inline-block;
-            padding: 5px 12px;
+            padding: 4px 10px;
             border-radius: 20px;
             font-size: 12px;
             font-weight: bold;
-        }
-
-        .badge-active {
-            background: #28a745;
-        }
-
-        .badge-grounded {
-            background: #dc3545;
-        }
-
-        /* Action Buttons */
-        .action-buttons {
-            display: flex;
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .action-buttons button {
-            flex: 1;
-            padding: 20px;
-            font-size: 18px;
-            font-weight: bold;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-transform: uppercase;
-        }
-
-        .btn-van-ok {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
-        }
-
-        .btn-van-ok:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.6);
-        }
-
-        .btn-vsa-block {
-            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-            color: white;
-            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
-        }
-
-        .btn-vsa-block:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(220, 53, 69, 0.6);
-        }
-
-        /* Problem Input */
-        .problem-section {
-            background: rgba(220, 53, 69, 0.1);
-            border: 2px solid #dc3545;
-            border-radius: 15px;
-            padding: 20px;
-            margin-top: 20px;
-            display: none;
-        }
-
-        .problem-section.show {
-            display: block;
-        }
-
-        #problem-description {
-            width: 100%;
-            min-height: 100px;
-            padding: 12px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
             color: #fff;
-            font-size: 16px;
-            resize: vertical;
         }
 
-        /* QR Code Section */
-        .qr-section {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            padding: 30px;
-            margin-top: 20px;
-            text-align: center;
-            display: none;
-        }
-
-        .qr-section.show {
-            display: block;
-        }
-
-        .qr-section h3 {
-            color: #131A22;
-            margin-bottom: 20px;
-        }
-
-        #qr-code {
-            display: inline-block;
-            padding: 20px;
-            background: white;
-            border-radius: 8px;
-            margin: 20px 0;
-        }
-
-        .qr-info {
-            color: #131A22;
-            font-size: 14px;
-            margin-top: 10px;
-        }
+        .badge-active  { background: #28a745; }
+        .badge-grounded { background: #dc3545; }
 
         /* Download Page */
         .download-section {
@@ -948,6 +1038,39 @@
             white-space: nowrap;
         }
 
+        /* ── Multi-select pills ── */
+        .ms-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .ms-pill {
+            background: #1a2332;
+            color: #aaa;
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 16px;
+            padding: 5px 11px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            outline: none;
+        }
+
+        .ms-pill:hover {
+            border-color: rgba(255,153,0,0.4);
+            color: #fff;
+        }
+
+        .ms-pill.on {
+            background: rgba(255,153,0,0.18);
+            border-color: #FF9900;
+            color: #FF9900;
+            font-weight: 600;
+        }
+
         .data-table th {
             cursor: pointer;
             user-select: none;
@@ -1317,79 +1440,79 @@
             <div class="header">
                 <h2>🔍 VSA Audit</h2>
                 <div class="header-actions">
-                    <button onclick="showPage('upload-page')" class="btn-secondary">Data Management</button>
-                    <button onclick="clearAuditSearch()" class="btn-info">Clear Search</button>
-                    <button onclick="logout()" class="btn-danger">Logout</button>
+                    <button onclick="showPage('upload-page')" class="btn-secondary">Data</button>
+                    <button onclick="showPage('download-page')" class="btn-secondary">Reports</button>
+                    <button onclick="logout()" class="btn-danger">Out</button>
                 </div>
             </div>
 
-            <div class="search-section">
-                <h3>⌨️ Enter License Plate</h3>
-                <div class="autocomplete-wrapper">
-                    <input type="text" id="license-plate-input" placeholder="Type license plate (e.g., HB449JJ)..." autocomplete="off">
-                    <div id="autocomplete-list"></div>
+            <!-- Step 1: Search -->
+            <div class="audit-step active" id="step-search">
+                <div class="search-section">
+                    <h3 style="margin:0 0 12px; color:#fff; font-size:16px;">⌨️ Enter License Plate</h3>
+                    <div class="autocomplete-wrapper">
+                        <input type="text" id="license-plate-input" placeholder="e.g. HB449JJ" autocomplete="off">
+                        <div id="autocomplete-list"></div>
+                    </div>
+                    <button onclick="searchVehicle()" class="btn btn-primary" style="width:100%; margin-top:14px; padding:14px; font-size:17px;">
+                        🔍 Check Vehicle
+                    </button>
                 </div>
-                <button onclick="searchVehicle()" class="btn btn-primary" style="width: 100%; margin-top: 15px;">
-                    🔍 Check Vehicle
-                </button>
             </div>
 
-            <div class="vehicle-info" id="vehicle-info">
-                <h3>🚐 Vehicle Information</h3>
-                
-                <div class="grounded-warning" id="grounded-warning" style="display: none;">
-                    <div class="grounded-warning-text">
-                        🚫 VEHICLE GROUNDED 🚫<br>
-                        THIS VAN CANNOT GO OUT
+            <!-- Step 2: Vehicle info + decision -->
+            <div class="audit-step" id="step-vehicle">
+                <div class="vehicle-info-card">
+                    <div class="grounded-warning" id="grounded-warning" style="display:none;">
+                        <div class="grounded-warning-text">🚫 VEHICLE GROUNDED 🚫<br>THIS VAN CANNOT GO OUT</div>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">License Plate</span>
+                        <span class="info-value" id="info-plate"></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">VIN</span>
+                        <span class="info-value" id="info-vin" style="font-size:13px; word-break:break-all;"></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">DSP</span>
+                        <span class="info-value" id="info-dsp"></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Status</span>
+                        <span class="info-value" id="info-status"></span>
+                    </div>
+                    <div class="last-audit-box needs-vsa" id="last-audit-box">
+                        <span class="info-label">⚠️ Last Audit</span>
+                        <span class="info-value" id="info-last-audit">—</span>
                     </div>
                 </div>
-                
-                <div class="info-row">
-                    <span class="info-label">License Plate:</span>
-                    <span class="info-value" id="info-plate"></span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">VIN:</span>
-                    <span class="info-value" id="info-vin"></span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">DSP:</span>
-                    <span class="info-value" id="info-dsp"></span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Status:</span>
-                    <span class="info-value" id="info-status"></span>
-                </div>
-                <div class="info-row last-audit-row">
-                    <span class="info-label last-audit-label">⚠️ Last Audit:</span>
-                    <span class="info-value last-audit-value" id="info-last-audit"></span>
-                </div>
-
-                <div class="action-buttons">
+                <div class="decision-buttons">
                     <button onclick="vanOK()" class="btn-van-ok">✅ VAN OK</button>
-                    <button onclick="vsaBlock()" class="btn-vsa-block">❌ VSA TO BLOCK</button>
+                    <button onclick="vsaBlock()" class="btn-vsa-block">❌ VSA BLOCK</button>
                 </div>
             </div>
 
-            <div class="problem-section" id="problem-section">
-                <h3>⚠️ Describe the Problem</h3>
-                <textarea id="problem-description" placeholder="Enter the problem details..."></textarea>
-                <button onclick="submitProblem()" class="btn btn-primary" style="width: 100%; margin-top: 15px;">
-                    Continue to QR Code
-                </button>
+            <!-- Step 3: Problem description (VSA BLOCK path) -->
+            <div class="audit-step" id="step-problem">
+                <div class="problem-card">
+                    <h3>⚠️ Describe the Problem</h3>
+                    <textarea id="problem-description" placeholder="Enter the problem details…"></textarea>
+                    <button onclick="submitProblem()" class="btn-submit-problem">Continue →</button>
+                    <button onclick="goAuditStep('step-vehicle')" class="btn-back">← Back</button>
+                </div>
             </div>
+        </div>
+    </div>
 
-            <div class="qr-section" id="qr-section">
-                <h3 id="qr-title">QR Code Generated</h3>
-                <div id="qr-code"></div>
-                <div class="qr-info" id="qr-info"></div>
-                <button onclick="saveAudit()" class="btn btn-success" style="margin-top: 20px;">
-                    💾 Save Audit
-                </button>
-                <button onclick="clearAuditSearch()" class="btn btn-secondary" style="margin-top: 10px;">
-                    🔄 Check Another Vehicle
-                </button>
-            </div>
+    <!-- QR Overlay (full-screen, on top of everything) -->
+    <div class="qr-overlay" id="qr-overlay">
+        <div class="qr-overlay-title passed" id="qr-overlay-title">✅ Van OK</div>
+        <div id="qr-code"></div>
+        <div class="qr-overlay-info" id="qr-overlay-info"></div>
+        <div class="qr-overlay-buttons">
+            <button onclick="saveAudit()" class="btn-save">💾 Save Audit</button>
+            <button onclick="resetAudit()" class="btn-next">🔄 Check Another Vehicle</button>
         </div>
     </div>
 
@@ -1517,10 +1640,7 @@
             
             input.addEventListener('focus', function() {
                 this.value = '';
-                this.placeholder = 'Type license plate (e.g., HB449JJ)...';
-                document.getElementById('vehicle-info').classList.remove('show');
-                document.getElementById('problem-section').classList.remove('show');
-                document.getElementById('qr-section').classList.remove('show');
+                this.placeholder = 'e.g. HB449JJ';
             });
 
             document.addEventListener('click', function(e) {
@@ -2192,9 +2312,7 @@
             const list = document.getElementById('autocomplete-list');
 
             if (value.length > 0) {
-                document.getElementById('vehicle-info').classList.remove('show');
-                document.getElementById('problem-section').classList.remove('show');
-                document.getElementById('qr-section').classList.remove('show');
+                document.getElementById('qr-overlay').classList.remove('show');
             }
 
             if (value.length < 2) {
@@ -2228,14 +2346,9 @@
 
         function searchVehicle() {
             const plate = document.getElementById('license-plate-input').value.toUpperCase().trim();
-            
-            if (!plate) {
-                alert('Please enter a license plate');
-                return;
-            }
+            if (!plate) return;
 
             const vehicle = vehicleDatabase.find(v => v.licensePlate === plate);
-
             if (!vehicle) {
                 alert('Vehicle not found in database');
                 return;
@@ -2243,168 +2356,140 @@
 
             currentVehicle = vehicle;
             displayVehicleInfo(vehicle);
+            goAuditStep('step-vehicle');
         }
 
         function displayVehicleInfo(vehicle) {
             document.getElementById('info-plate').textContent = vehicle.licensePlate;
-            document.getElementById('info-vin').textContent = vehicle.vin;
-            document.getElementById('info-dsp').textContent = vehicle.dsp;
-            
-            const groundedWarning = document.getElementById('grounded-warning');
-            if (vehicle.isGrounded) {
-                groundedWarning.style.display = 'block';
-            } else {
-                groundedWarning.style.display = 'none';
-            }
-            
-            let statusHtml = '<span class="status-badge badge-active">ACTIVE</span>';
-            if (vehicle.isGrounded) {
-                statusHtml = '<span class="status-badge badge-grounded">GROUNDED</span>';
-            }
-            document.getElementById('info-status').innerHTML = statusHtml;
-            
-            const lastAuditRow = document.querySelector('.last-audit-row');
-            const lastAuditLabel = document.querySelector('.last-audit-label');
-            const lastAuditValue = document.getElementById('info-last-audit');
-            
-            lastAuditRow.classList.remove('needs-vsa', 'already-audited');
-            lastAuditLabel.classList.remove('needs-vsa', 'already-audited');
-            lastAuditValue.classList.remove('needs-vsa', 'already-audited');
-            
+            document.getElementById('info-vin').textContent   = vehicle.vin;
+            document.getElementById('info-dsp').textContent   = vehicle.dsp;
+
+            // Grounded warning
+            document.getElementById('grounded-warning').style.display = vehicle.isGrounded ? 'block' : 'none';
+
+            // Status badge
+            document.getElementById('info-status').innerHTML = vehicle.isGrounded
+                ? '<span class="status-badge badge-grounded">GROUNDED</span>'
+                : '<span class="status-badge badge-active">ACTIVE</span>';
+
+            // Last audit box
+            const box   = document.getElementById('last-audit-box');
+            const label = box.querySelector('.info-label');
+            const value = document.getElementById('info-last-audit');
+
+            box.classList.remove('needs-vsa', 'already-audited');
             if (vehicle.lastAudit) {
-                lastAuditRow.classList.add('already-audited');
-                lastAuditLabel.classList.add('already-audited');
-                lastAuditValue.classList.add('already-audited');
-                lastAuditLabel.innerHTML = '✅ Last Audit:';
-                lastAuditValue.textContent = vehicle.lastAudit;
+                box.classList.add('already-audited');
+                label.innerHTML = '✅ Last Audit';
+                value.textContent = vehicle.lastAudit;
             } else {
-                lastAuditRow.classList.add('needs-vsa');
-                lastAuditLabel.classList.add('needs-vsa');
-                lastAuditValue.classList.add('needs-vsa');
-                lastAuditLabel.innerHTML = '⚠️ Last Audit:';
-                lastAuditValue.textContent = 'NOT AUDITED YET - VSA REQUIRED';
+                box.classList.add('needs-vsa');
+                label.innerHTML = '⚠️ Last Audit';
+                value.textContent = 'VSA REQUIRED';
             }
 
-            document.getElementById('vehicle-info').classList.add('show');
             document.getElementById('autocomplete-list').style.display = 'none';
         }
 
-        function clearAuditSearch() {
+        // ── Step navigation ──
+        function goAuditStep(stepId) {
+            document.querySelectorAll('.audit-step').forEach(s => s.classList.remove('active'));
+            document.getElementById(stepId).classList.add('active');
+            if (stepId === 'step-search') {
+                setTimeout(() => document.getElementById('license-plate-input').focus(), 100);
+            }
+        }
+
+        function resetAudit() {
+            document.getElementById('qr-overlay').classList.remove('show');
             currentVehicle = null;
-            auditResult = null;
+            auditResult    = null;
             document.getElementById('license-plate-input').value = '';
-            document.getElementById('license-plate-input').focus();
             document.getElementById('problem-description').value = '';
-            document.getElementById('vehicle-info').classList.remove('show');
-            document.getElementById('problem-section').classList.remove('show');
-            document.getElementById('qr-section').classList.remove('show');
-            document.getElementById('autocomplete-list').style.display = 'none';
+            goAuditStep('step-search');
         }
 
-        // Audit Actions
+        // ── Audit decisions ──
         function vanOK() {
             if (!currentVehicle) return;
-
-            document.getElementById('problem-section').classList.remove('show');
-            document.getElementById('problem-description').value = '';
-
-            auditResult = {
-                result: 'PASSED',
-                problem: null
-            };
-
-            generateQRCode();
+            auditResult = { result: 'PASSED', problem: null };
+            showQROverlay();
         }
 
         function vsaBlock() {
             if (!currentVehicle) return;
-
-            document.getElementById('problem-section').classList.add('show');
-            document.getElementById('qr-section').classList.remove('show');
+            goAuditStep('step-problem');
         }
 
         function submitProblem() {
             const problem = document.getElementById('problem-description').value.trim();
-            
             if (!problem) {
                 alert('Please describe the problem');
                 return;
             }
-
-            auditResult = {
-                result: 'FAILED',
-                problem: problem
-            };
-
-            document.getElementById('problem-section').classList.remove('show');
-            generateQRCode();
+            auditResult = { result: 'FAILED', problem: problem };
+            showQROverlay();
         }
 
-        function generateQRCode() {
+        // ── QR Overlay ──
+        function showQROverlay() {
             const qrDiv = document.getElementById('qr-code');
             qrDiv.innerHTML = '';
 
-            const qrData = JSON.stringify({
-                vin: currentVehicle.vin,
-                licensePlate: currentVehicle.licensePlate,
-                dsp: currentVehicle.dsp,
-                result: auditResult.result,
-                problem: auditResult.problem,
-                timestamp: new Date().toISOString()
-            });
-
             new QRCode(qrDiv, {
-                text: qrData,
-                width: 256,
-                height: 256,
+                text: JSON.stringify({
+                    vin: currentVehicle.vin,
+                    licensePlate: currentVehicle.licensePlate,
+                    dsp: currentVehicle.dsp,
+                    result: auditResult.result,
+                    problem: auditResult.problem,
+                    timestamp: new Date().toISOString()
+                }),
+                width: 240,
+                height: 240,
                 colorDark: '#000000',
                 colorLight: '#ffffff',
                 correctLevel: QRCode.CorrectLevel.H
             });
 
-            const title = auditResult.result === 'PASSED' ? 
-                '✅ Van OK - QR Code' : 
-                '❌ VSA Blocked - QR Code';
-            
-            document.getElementById('qr-title').textContent = title;
-            document.getElementById('qr-info').innerHTML = `
-                VIN: ${currentVehicle.vin}<br>
-                License Plate: ${currentVehicle.licensePlate}<br>
-                DSP: ${currentVehicle.dsp}<br>
-                Result: ${auditResult.result}
-            `;
+            const passed = auditResult.result === 'PASSED';
+            const title  = document.getElementById('qr-overlay-title');
+            title.textContent = passed ? '✅ Van OK' : '❌ VSA Blocked';
+            title.className   = 'qr-overlay-title ' + (passed ? 'passed' : 'failed');
 
-            document.getElementById('qr-section').classList.add('show');
+            document.getElementById('qr-overlay-info').innerHTML =
+                `<strong>${currentVehicle.licensePlate}</strong> · ${currentVehicle.dsp}<br>${currentVehicle.vin}` +
+                (auditResult.problem ? `<br><span style="color:#dc3545;">Problem: ${auditResult.problem}</span>` : '');
+
+            document.getElementById('qr-overlay').classList.add('show');
         }
 
+        // ── Save ──
         async function saveAudit() {
             if (!currentVehicle || !auditResult) return;
 
             const audit = {
-                id: Date.now(),
-                vin: currentVehicle.vin,
-                licensePlate: currentVehicle.licensePlate,
-                dsp: currentVehicle.dsp,
-                result: auditResult.result,
-                problem: auditResult.problem,
-                timestamp: new Date().toISOString(),
-                date: new Date().toLocaleDateString(),
-                time: new Date().toLocaleTimeString(),
-                user: currentUser ? currentUser.username : 'unknown'
+                id:            Date.now(),
+                vin:           currentVehicle.vin,
+                licensePlate:  currentVehicle.licensePlate,
+                dsp:           currentVehicle.dsp,
+                result:        auditResult.result,
+                problem:       auditResult.problem,
+                timestamp:     new Date().toISOString(),
+                date:          new Date().toLocaleDateString(),
+                time:          new Date().toLocaleTimeString(),
+                user:          currentUser ? currentUser.username : 'unknown'
             };
 
-            // Save to Firebase
             const saved = await saveAuditToFirebase(audit);
-            
-            if (saved) {
-                alert('✅ Audit saved to cloud database!');
-            } else {
-                alert('⚠️ Audit saved locally but cloud save failed');
-            }
+            if (!saved) alert('⚠️ Cloud save failed — check connection.');
 
-            setTimeout(() => {
-                clearAuditSearch();
-            }, 500);
+            // Update local vehicle record so stats refresh
+            const v = vehicleDatabase.find(x => x.licensePlate === currentVehicle.licensePlate);
+            if (v) v.lastAudit = audit.date;
+            updateDatabaseStats();
+
+            resetAudit();
         }
 
         // Reports
@@ -2592,20 +2677,18 @@
                     <input class="search-input" type="text" id="v-search" placeholder="🔍 Search plate / VIN…" oninput="renderVehicleTable()">
                     <div class="toolbar-group">
                         <span class="toolbar-label">DSP</span>
-                        <select id="v-dsp" onchange="renderVehicleTable()">
-                            <option value="">All</option>
-                            ${dspSet.map(d => `<option value="${d}">${d}</option>`).join('')}
-                        </select>
+                        <div class="ms-wrap" id="v-dsp">
+                            ${dspSet.map(d => `<button class="ms-pill" data-val="${d}" onclick="togglePill(this,'renderVehicleTable')">${d}</button>`).join('')}
+                        </div>
                     </div>
                     <div class="toolbar-group">
                         <span class="toolbar-label">Status</span>
-                        <select id="v-status" onchange="renderVehicleTable()">
-                            <option value="">All</option>
-                            <option value="active">Active</option>
-                            <option value="grounded">Grounded</option>
-                            <option value="audited">Audited</option>
-                            <option value="not-audited">Not Audited</option>
-                        </select>
+                        <div class="ms-wrap" id="v-status">
+                            <button class="ms-pill" data-val="active"     onclick="togglePill(this,'renderVehicleTable')">Active</button>
+                            <button class="ms-pill" data-val="grounded"   onclick="togglePill(this,'renderVehicleTable')">Grounded</button>
+                            <button class="ms-pill" data-val="audited"    onclick="togglePill(this,'renderVehicleTable')">Audited</button>
+                            <button class="ms-pill" data-val="not-audited" onclick="togglePill(this,'renderVehicleTable')">Not Audited</button>
+                        </div>
                     </div>
                     <span class="modal-count" id="v-count">${data.length} vehicles</span>
                 </div>
@@ -2618,17 +2701,23 @@
         }
 
         function renderVehicleTable() {
-            const search  = document.getElementById('v-search').value.toLowerCase();
-            const dsp     = document.getElementById('v-dsp').value;
-            const status  = document.getElementById('v-status').value;
+            const search   = document.getElementById('v-search').value.toLowerCase();
+            const dsps     = getSelectedPills('v-dsp');
+            const statuses = getSelectedPills('v-status');
 
             let filtered = currentModalData.filter(v => {
                 if (search && !v.licensePlate.toLowerCase().includes(search) && !v.vin.toLowerCase().includes(search)) return false;
-                if (dsp && v.dsp !== dsp) return false;
-                if (status === 'active'     && v.isGrounded) return false;
-                if (status === 'grounded'   && !v.isGrounded) return false;
-                if (status === 'audited'    && !v.lastAudit) return false;
-                if (status === 'not-audited' && v.lastAudit) return false;
+                if (dsps.length && !dsps.includes(v.dsp)) return false;
+                if (statuses.length) {
+                    const match = statuses.some(s => {
+                        if (s === 'active')      return !v.isGrounded;
+                        if (s === 'grounded')    return  v.isGrounded;
+                        if (s === 'audited')     return !!v.lastAudit;
+                        if (s === 'not-audited') return !v.lastAudit;
+                        return false;
+                    });
+                    if (!match) return false;
+                }
                 return true;
             });
 
@@ -2759,25 +2848,22 @@
                         <input class="search-input" type="text" id="a-search" placeholder="🔍 Search plate / VIN…" oninput="renderAuditTable()">
                         <div class="toolbar-group">
                             <span class="toolbar-label">Result</span>
-                            <select id="a-result" onchange="renderAuditTable()">
-                                <option value="">All</option>
-                                <option value="PASSED">Passed</option>
-                                <option value="FAILED">Failed</option>
-                            </select>
+                            <div class="ms-wrap" id="a-result">
+                                <button class="ms-pill" data-val="PASSED" onclick="togglePill(this,'renderAuditTable')">Passed</button>
+                                <button class="ms-pill" data-val="FAILED" onclick="togglePill(this,'renderAuditTable')">Failed</button>
+                            </div>
                         </div>
                         <div class="toolbar-group">
                             <span class="toolbar-label">DSP</span>
-                            <select id="a-dsp" onchange="renderAuditTable()">
-                                <option value="">All</option>
-                                ${dspSet.map(d => `<option value="${d}">${d}</option>`).join('')}
-                            </select>
+                            <div class="ms-wrap" id="a-dsp">
+                                ${dspSet.map(d => `<button class="ms-pill" data-val="${d}" onclick="togglePill(this,'renderAuditTable')">${d}</button>`).join('')}
+                            </div>
                         </div>
                         <div class="toolbar-group">
                             <span class="toolbar-label">User</span>
-                            <select id="a-user" onchange="renderAuditTable()">
-                                <option value="">All</option>
-                                ${userSet.map(u => `<option value="${u}">${u}</option>`).join('')}
-                            </select>
+                            <div class="ms-wrap" id="a-user">
+                                ${userSet.map(u => `<button class="ms-pill" data-val="${u}" onclick="togglePill(this,'renderAuditTable')">${u}</button>`).join('')}
+                            </div>
                         </div>
                         <span class="modal-count" id="a-count">${data.length} audits</span>
                     </div>
@@ -2796,16 +2882,16 @@
         }
 
         function renderAuditTable() {
-            const search = document.getElementById('a-search').value.toLowerCase();
-            const result = document.getElementById('a-result').value;
-            const dsp    = document.getElementById('a-dsp').value;
-            const user   = document.getElementById('a-user').value;
+            const search  = document.getElementById('a-search').value.toLowerCase();
+            const results = getSelectedPills('a-result');
+            const dsps    = getSelectedPills('a-dsp');
+            const users   = getSelectedPills('a-user');
 
             let filtered = currentModalData.filter(a => {
-                if (search && !a.licensePlate.toLowerCase().includes(search) && !a.vin.toLowerCase().includes(search)) return false;
-                if (result && a.result !== result) return false;
-                if (dsp    && a.dsp !== dsp) return false;
-                if (user   && (a.user || 'Unknown') !== user) return false;
+                if (search  && !a.licensePlate.toLowerCase().includes(search) && !a.vin.toLowerCase().includes(search)) return false;
+                if (results.length && !results.includes(a.result)) return false;
+                if (dsps.length   && !dsps.includes(a.dsp)) return false;
+                if (users.length  && !users.includes(a.user || 'Unknown')) return false;
                 return true;
             });
 
@@ -2905,7 +2991,6 @@
         // EXPORT — exports the currently *visible* (filtered) rows
         // ============================================================
         function exportModalData() {
-            // Re-read the currently rendered table rows so we export what the user sees
             const rows = document.querySelectorAll('.data-table tbody tr');
             if (rows.length === 0) { alert('No data to export.'); return; }
 
@@ -2916,17 +3001,22 @@
             if (currentModalType === 'vehicle') {
                 filename = `vehicles_${modalTitle.toLowerCase().replace(/[^a-z0-9]/g,'_')}_${date}.csv`;
                 const headers = ['License Plate','VIN','DSP','Status','Last Audit'];
-                // pull visible filtered data by re-running the same filter logic
-                const search  = document.getElementById('v-search').value.toLowerCase();
-                const dsp     = document.getElementById('v-dsp').value;
-                const status  = document.getElementById('v-status').value;
+                const search   = document.getElementById('v-search').value.toLowerCase();
+                const dsps     = getSelectedPills('v-dsp');
+                const statuses = getSelectedPills('v-status');
                 let filtered = currentModalData.filter(v => {
                     if (search && !v.licensePlate.toLowerCase().includes(search) && !v.vin.toLowerCase().includes(search)) return false;
-                    if (dsp && v.dsp !== dsp) return false;
-                    if (status === 'active'      && v.isGrounded) return false;
-                    if (status === 'grounded'    && !v.isGrounded) return false;
-                    if (status === 'audited'     && !v.lastAudit) return false;
-                    if (status === 'not-audited' && v.lastAudit) return false;
+                    if (dsps.length && !dsps.includes(v.dsp)) return false;
+                    if (statuses.length) {
+                        const match = statuses.some(s => {
+                            if (s === 'active')      return !v.isGrounded;
+                            if (s === 'grounded')    return  v.isGrounded;
+                            if (s === 'audited')     return !!v.lastAudit;
+                            if (s === 'not-audited') return !v.lastAudit;
+                            return false;
+                        });
+                        if (!match) return false;
+                    }
                     return true;
                 });
                 const dataRows = filtered.map(v => [v.licensePlate, v.vin, v.dsp, v.isGrounded?'GROUNDED':'ACTIVE', v.lastAudit||'']);
@@ -2934,15 +3024,15 @@
             } else {
                 filename = `audits_${modalTitle.toLowerCase().replace(/[^a-z0-9]/g,'_')}_${date}.csv`;
                 const headers = ['Date','Time','License Plate','VIN','DSP','Result','Problem','User'];
-                const search = document.getElementById('a-search').value.toLowerCase();
-                const result = document.getElementById('a-result').value;
-                const dsp    = document.getElementById('a-dsp').value;
-                const user   = document.getElementById('a-user').value;
+                const search  = document.getElementById('a-search').value.toLowerCase();
+                const results = getSelectedPills('a-result');
+                const dsps    = getSelectedPills('a-dsp');
+                const users   = getSelectedPills('a-user');
                 let filtered = currentModalData.filter(a => {
-                    if (search && !a.licensePlate.toLowerCase().includes(search) && !a.vin.toLowerCase().includes(search)) return false;
-                    if (result && a.result !== result) return false;
-                    if (dsp    && a.dsp !== dsp) return false;
-                    if (user   && (a.user||'Unknown') !== user) return false;
+                    if (search  && !a.licensePlate.toLowerCase().includes(search) && !a.vin.toLowerCase().includes(search)) return false;
+                    if (results.length && !results.includes(a.result)) return false;
+                    if (dsps.length   && !dsps.includes(a.dsp)) return false;
+                    if (users.length  && !users.includes(a.user || 'Unknown')) return false;
                     return true;
                 });
                 const dataRows = filtered.map(a => [a.date, a.time, a.licensePlate, a.vin, a.dsp, a.result, a.problem||'', a.user||'']);
@@ -2955,6 +3045,18 @@
             a.href     = url;
             a.download = filename;
             a.click();
+        }
+
+        // ── Multi-select pill helpers ──
+        function togglePill(btn, rerenderFn) {
+            btn.classList.toggle('on');
+            if (typeof window[rerenderFn] === 'function') window[rerenderFn]();
+        }
+
+        function getSelectedPills(containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return [];
+            return [...container.querySelectorAll('.ms-pill.on')].map(b => b.dataset.val);
         }
 
         // Close modal when clicking backdrop
