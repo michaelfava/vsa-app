@@ -817,9 +817,9 @@
             <div class="upload-section">
                 <div class="collapsible-header" onclick="toggleSection('upload-files')">
                     <h3>📊 Upload Data Files</h3>
-                    <span class="collapse-icon" id="upload-files-icon">▼</span>
+                    <span class="collapse-icon collapsed" id="upload-files-icon">▼</span>
                 </div>
-                <div id="upload-files-content" class="collapsible-content">
+                <div id="upload-files-content" class="collapsible-content hidden">
                     <p style="color: #aaa; margin-bottom: 20px;">Upload files to update the shared database (all users will see changes)</p>
 
                     <div class="file-input-wrapper">
@@ -1291,13 +1291,19 @@
             
             sections.forEach(sectionId => {
                 const savedState = localStorage.getItem('section-' + sectionId);
-                if (savedState === 'collapsed') {
-                    const content = document.getElementById(sectionId + '-content');
-                    const icon = document.getElementById(sectionId + '-icon');
-                    if (content && icon) {
-                        content.classList.add('hidden');
-                        icon.classList.add('collapsed');
-                    }
+                const content = document.getElementById(sectionId + '-content');
+                const icon = document.getElementById(sectionId + '-icon');
+                
+                if (!content || !icon) return;
+                
+                // If there's a saved state, use it
+                // Otherwise use default (upload-files starts collapsed, others expanded)
+                if (savedState === 'collapsed' || (sectionId === 'upload-files' && !savedState)) {
+                    content.classList.add('hidden');
+                    icon.classList.add('collapsed');
+                } else if (savedState === 'expanded') {
+                    content.classList.remove('hidden');
+                    icon.classList.remove('collapsed');
                 }
             });
         }
@@ -1329,70 +1335,82 @@
 
         function handleFileSelect(input, fileType) {
             const file = input.files[0];
-            if (file) {
+            if (!file) return;
+
+            const fileName = file.name.toLowerCase();
+            let isValid = false;
+            let errorMessage = '';
+
+            // Validate based on file type
+            switch(fileType) {
+                case 'dive-deep':
+                    // Check if it's a CSV and contains expected keywords
+                    const hasDiveDeepKeywords = 
+                        fileName.includes('dive') || fileName.includes('deep') || 
+                        fileName.includes('expected') || fileName.includes('vehicle');
+                    
+                    if (!fileName.endsWith('.csv')) {
+                        errorMessage = '❌ Expected Vehicles file must be a CSV file (.csv)';
+                    } else if (!hasDiveDeepKeywords) {
+                        errorMessage = '❌ File should contain "expected", "vehicle", "dive", or "deep" in name';
+                    } else {
+                        isValid = true;
+                    }
+                    break;
+
+                case 'vin-audit':
+                    // Check if it's XLSX and contains VIN and (audit or detail)
+                    const hasVinAuditKeywords = 
+                        fileName.includes('vin') && 
+                        (fileName.includes('audit') || fileName.includes('detail'));
+                    
+                    if (!fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
+                        errorMessage = '❌ VIN Audit file must be an Excel file (.xlsx or .xls)';
+                    } else if (!hasVinAuditKeywords) {
+                        errorMessage = '❌ File should contain "vin" and "audit" or "detail" in name';
+                    } else {
+                        isValid = true;
+                    }
+                    break;
+
+                case 'grounded':
+                    // Check if it's XLSX and contains grounded or (current and veh)
+                    const hasGroundedKeywords = 
+                        fileName.includes('ground') || 
+                        (fileName.includes('current') && fileName.includes('veh'));
+                    
+                    if (!fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
+                        errorMessage = '❌ Grounded file must be an Excel file (.xlsx or .xls)';
+                    } else if (!hasGroundedKeywords) {
+                        errorMessage = '❌ File should contain "ground" or "current veh" in name';
+                    } else {
+                        isValid = true;
+                    }
+                    break;
+            }
+
+            // Update UI based on validation
+            const nameDisplay = document.getElementById(fileType + '-name');
+            
+            if (isValid) {
                 uploadedFiles[fileType] = file;
-                document.getElementById(fileType + '-name').textContent = '✓ ' + file.name;
+                nameDisplay.innerHTML = '✅ ' + file.name;
+                nameDisplay.style.color = '#28a745';
+            } else {
+                uploadedFiles[fileType] = null;
+                input.value = ''; // Clear the input
+                nameDisplay.innerHTML = errorMessage;
+                nameDisplay.style.color = '#dc3545';
+                
+                // Show alert to user
+                alert(errorMessage + '\n\nFile: ' + file.name + '\n\nPlease select the correct file.');
             }
         }
 
         async function processFiles() {
+            // Check if all files are uploaded
             if (!uploadedFiles['dive-deep'] || !uploadedFiles['vin-audit'] || !uploadedFiles['grounded']) {
-                showStatus('upload-status', 'Please upload all three files', 'error');
-                return;
-            }
-
-            // Validate filenames
-            const diveDeepFile = uploadedFiles['dive-deep'].name.toLowerCase();
-            const vinAuditFile = uploadedFiles['vin-audit'].name.toLowerCase();
-            const groundedFile = uploadedFiles['grounded'].name.toLowerCase();
-
-            let validationErrors = [];
-
-            // Check Dive Deep CSV (more flexible)
-            const isDiveDeepValid = 
-                (diveDeepFile.includes('dive') || diveDeepFile.includes('deep') || 
-                 diveDeepFile.includes('expected') || diveDeepFile.includes('vehicle'));
-            
-            if (!isDiveDeepValid) {
-                validationErrors.push('❌ First file should be Expected Vehicles CSV');
-            }
-            if (!diveDeepFile.endsWith('.csv')) {
-                validationErrors.push('❌ First file must be a CSV file (.csv)');
-            }
-
-            // Check VIN Audit Detail XLSX (more flexible)
-            const isVinAuditValid = 
-                (vinAuditFile.includes('vin') && (vinAuditFile.includes('audit') || vinAuditFile.includes('detail')));
-            
-            if (!isVinAuditValid) {
-                validationErrors.push('❌ Second file should be VIN Audit Detail XLSX');
-            }
-            if (!vinAuditFile.endsWith('.xlsx') && !vinAuditFile.endsWith('.xls')) {
-                validationErrors.push('❌ Second file must be an Excel file (.xlsx or .xls)');
-            }
-
-            // Check Current Grounded XLSX (more flexible)
-            const isGroundedValid = 
-                (groundedFile.includes('ground') || 
-                 (groundedFile.includes('current') && groundedFile.includes('veh')));
-            
-            if (!isGroundedValid) {
-                validationErrors.push('❌ Third file should be Current Grounded Vehicle XLSX');
-            }
-            if (!groundedFile.endsWith('.xlsx') && !groundedFile.endsWith('.xls')) {
-                validationErrors.push('❌ Third file must be an Excel file (.xlsx or .xls)');
-            }
-
-            // Show validation errors if any
-            if (validationErrors.length > 0) {
-                const errorMessage = 'File validation failed:\n\n' + validationErrors.join('\n') + 
-                    '\n\nPlease upload the correct files:\n' +
-                    '1. Expected Vehicles (Active) CSV\n' +
-                    '2. VIN Audit Detail XLSX\n' +
-                    '3. Current Grounded Vehicle XLSX';
-                
-                alert(errorMessage);
-                showStatus('upload-status', validationErrors.join('<br>'), 'error');
+                showStatus('upload-status', '⚠️ Please upload all three files. Each file is validated when selected.', 'error');
                 return;
             }
 
@@ -1442,6 +1460,15 @@
                         'success'
                     );
                     updateDatabaseStats();
+                    
+                    // Clear file inputs after successful upload
+                    uploadedFiles = { 'dive-deep': null, 'vin-audit': null, 'grounded': null };
+                    document.getElementById('dive-deep-file').value = '';
+                    document.getElementById('vin-audit-file').value = '';
+                    document.getElementById('grounded-file').value = '';
+                    document.getElementById('dive-deep-name').innerHTML = '';
+                    document.getElementById('vin-audit-name').innerHTML = '';
+                    document.getElementById('grounded-name').innerHTML = '';
                 } else {
                     showStatus('upload-status', '⚠️ Processed locally but cloud save failed. Check Firebase connection.', 'error');
                 }
