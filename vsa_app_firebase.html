@@ -709,6 +709,42 @@
             background: rgba(220, 53, 69, 0.1);
             border-color: #dc3545;
         }
+
+        /* Collapsible sections */
+        .collapsible-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            padding: 5px 0;
+            margin-bottom: 15px;
+        }
+
+        .collapsible-header:hover {
+            opacity: 0.8;
+        }
+
+        .collapse-icon {
+            font-size: 20px;
+            transition: transform 0.3s;
+        }
+
+        .collapse-icon.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .collapsible-content {
+            max-height: 2000px;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+            opacity: 1;
+        }
+
+        .collapsible-content.hidden {
+            max-height: 0;
+            opacity: 0;
+        }
     </style>
 </head>
 <body>
@@ -760,49 +796,62 @@
             </div>
 
             <!-- Firebase Status -->
-            <div id="firebase-status" class="firebase-status" style="display: none;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <span id="firebase-icon" style="font-size: 24px;">🔴</span>
-                    <div>
-                        <div id="firebase-text" style="font-weight: bold;"></div>
-                        <div id="firebase-detail" style="font-size: 12px; margin-top: 5px;"></div>
+            <div id="firebase-status-section" class="upload-section" style="display: none;">
+                <div class="collapsible-header" onclick="toggleSection('firebase-status')">
+                    <h3>🔗 Connection Status</h3>
+                    <span class="collapse-icon" id="firebase-status-icon">▼</span>
+                </div>
+                <div id="firebase-status-content" class="collapsible-content">
+                    <div id="firebase-status" class="firebase-status">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span id="firebase-icon" style="font-size: 24px;">🔴</span>
+                            <div>
+                                <div id="firebase-text" style="font-weight: bold;"></div>
+                                <div id="firebase-detail" style="font-size: 12px; margin-top: 5px;"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="upload-section">
-                <h3>📊 Upload Data Files</h3>
-                <p style="color: #aaa; margin-bottom: 20px;">Upload files to update the shared database (all users will see changes)</p>
-
-                <div class="file-input-wrapper">
-                    <input type="file" id="dive-deep-file" accept=".csv" onchange="handleFileSelect(this, 'dive-deep')">
-                    <label for="dive-deep-file" class="file-input-label">
-                        📄 Click to select Dive Deep CSV
-                        <div class="file-name" id="dive-deep-name"></div>
-                    </label>
+                <div class="collapsible-header" onclick="toggleSection('upload-files')">
+                    <h3>📊 Upload Data Files</h3>
+                    <span class="collapse-icon" id="upload-files-icon">▼</span>
                 </div>
+                <div id="upload-files-content" class="collapsible-content">
+                    <p style="color: #aaa; margin-bottom: 20px;">Upload files to update the shared database (all users will see changes)</p>
 
-                <div class="file-input-wrapper">
-                    <input type="file" id="vin-audit-file" accept=".xlsx" onchange="handleFileSelect(this, 'vin-audit')">
-                    <label for="vin-audit-file" class="file-input-label">
-                        📋 Click to select VIN Audit Detail XLSX
-                        <div class="file-name" id="vin-audit-name"></div>
-                    </label>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="dive-deep-file" accept=".csv" onchange="handleFileSelect(this, 'dive-deep')">
+                        <label for="dive-deep-file" class="file-input-label">
+                            📄 Click to select Dive Deep CSV
+                            <div class="file-name" id="dive-deep-name"></div>
+                        </label>
+                    </div>
+
+                    <div class="file-input-wrapper">
+                        <input type="file" id="vin-audit-file" accept=".xlsx" onchange="handleFileSelect(this, 'vin-audit')">
+                        <label for="vin-audit-file" class="file-input-label">
+                            📋 Click to select VIN Audit Detail XLSX
+                            <div class="file-name" id="vin-audit-name"></div>
+                        </label>
+                    </div>
+
+                    <div class="file-input-wrapper">
+                        <input type="file" id="grounded-file" accept=".xlsx" onchange="handleFileSelect(this, 'grounded')">
+                        <label for="grounded-file" class="file-input-label">
+                            🚫 Click to select Current Grounded XLSX
+                            <div class="file-name" id="grounded-name"></div>
+                        </label>
+                    </div>
+
+                    <button onclick="processFiles()" class="btn btn-primary" style="margin-top: 20px;">
+                        Process & Upload to Cloud
+                    </button>
+
+                    <div id="upload-status"></div>
                 </div>
-
-                <div class="file-input-wrapper">
-                    <input type="file" id="grounded-file" accept=".xlsx" onchange="handleFileSelect(this, 'grounded')">
-                    <label for="grounded-file" class="file-input-label">
-                        🚫 Click to select Current Grounded XLSX
-                        <div class="file-name" id="grounded-name"></div>
-                    </label>
-                </div>
-
-                <button onclick="processFiles()" class="btn btn-primary" style="margin-top: 20px;">
-                    Process & Upload to Cloud
-                </button>
-
-                <div id="upload-status"></div>
             </div>
 
             <div class="upload-section">
@@ -1013,6 +1062,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             setupEventListeners();
             checkLoginStatus();
+            initializeCollapsibleSections();
         });
 
         function setupEventListeners() {
@@ -1173,12 +1223,13 @@
         }
 
         function updateFirebaseStatus(status, detail = '') {
+            const statusSection = document.getElementById('firebase-status-section');
             const statusDiv = document.getElementById('firebase-status');
             const iconSpan = document.getElementById('firebase-icon');
             const textDiv = document.getElementById('firebase-text');
             const detailDiv = document.getElementById('firebase-detail');
 
-            statusDiv.style.display = 'flex';
+            statusSection.style.display = 'block';
             statusDiv.className = 'firebase-status ' + status;
 
             switch(status) {
@@ -1208,11 +1259,65 @@
             document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
 
+            // Clear all status messages when changing pages
+            clearAllStatusMessages();
+
             if (pageId === 'upload-page') {
                 updateDatabaseStats();
             } else if (pageId === 'download-page') {
                 updateReportStats();
             }
+        }
+
+        // Toggle collapsible sections
+        function toggleSection(sectionId) {
+            const content = document.getElementById(sectionId + '-content');
+            const icon = document.getElementById(sectionId + '-icon');
+            
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                icon.classList.remove('collapsed');
+                localStorage.setItem('section-' + sectionId, 'expanded');
+            } else {
+                content.classList.add('hidden');
+                icon.classList.add('collapsed');
+                localStorage.setItem('section-' + sectionId, 'collapsed');
+            }
+        }
+
+        // Initialize collapsible sections from saved state
+        function initializeCollapsibleSections() {
+            const sections = ['firebase-status', 'upload-files'];
+            
+            sections.forEach(sectionId => {
+                const savedState = localStorage.getItem('section-' + sectionId);
+                if (savedState === 'collapsed') {
+                    const content = document.getElementById(sectionId + '-content');
+                    const icon = document.getElementById(sectionId + '-icon');
+                    if (content && icon) {
+                        content.classList.add('hidden');
+                        icon.classList.add('collapsed');
+                    }
+                }
+            });
+        }
+
+        // Clear all status messages
+        function clearAllStatusMessages() {
+            const statusElements = [
+                'upload-status',
+                'clear-status',
+                'download-status'
+            ];
+
+            statusElements.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.style.display = 'none';
+                    element.textContent = '';
+                    element.className = 'status-message';
+                }
+            });
         }
 
         // File Upload and Processing
@@ -1864,11 +1969,32 @@
         }
 
         // Utility Functions
+        let statusTimers = {}; // Track timers for each status element
+
         function showStatus(elementId, message, type) {
             const element = document.getElementById(elementId);
             element.className = 'status-message status-' + type;
-            element.textContent = message;
+            element.innerHTML = message.replace(/\n/g, '<br>');
             element.style.display = 'block';
+
+            // Clear existing timer for this element if any
+            if (statusTimers[elementId]) {
+                clearTimeout(statusTimers[elementId]);
+            }
+
+            // Auto-hide after 5 seconds (only for success and info messages)
+            if (type === 'success' || type === 'info') {
+                statusTimers[elementId] = setTimeout(() => {
+                    element.style.transition = 'opacity 0.5s';
+                    element.style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        element.style.display = 'none';
+                        element.style.opacity = '1';
+                        element.style.transition = '';
+                    }, 500);
+                }, 5000);
+            }
         }
 
         function showLoading(text) {
