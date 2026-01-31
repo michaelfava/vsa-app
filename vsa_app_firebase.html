@@ -970,6 +970,157 @@
             opacity: 1;
             color: #FF9900;
         }
+
+        /* ── Audit Progress Section ── */
+        .progress-section {
+            background: linear-gradient(135deg, rgba(255,153,0,0.07) 0%, rgba(34,45,60,0.6) 100%);
+            border: 1px solid rgba(255,153,0,0.25);
+            border-radius: 14px;
+            padding: 24px 26px;
+            margin-top: 28px;
+            margin-bottom: 8px;
+        }
+
+        .progress-section h3 {
+            margin: 0 0 4px;
+            color: #FF9900;
+            font-size: 18px;
+        }
+
+        .progress-week-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .progress-week-badge {
+            background: rgba(255,153,0,0.15);
+            color: #FF9900;
+            border: 1px solid rgba(255,153,0,0.3);
+            border-radius: 20px;
+            padding: 4px 14px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .progress-target-badge {
+            font-size: 13px;
+            color: #aaa;
+        }
+
+        .progress-target-badge strong {
+            color: #fff;
+        }
+
+        .progress-bar-wrap {
+            position: relative;
+            margin-bottom: 22px;
+            padding-top: 20px;
+        }
+
+        .progress-bar-track {
+            position: relative;
+            height: 28px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 14px;
+            overflow: visible;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 14px;
+            transition: width 0.6s ease, background 0.4s;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 12px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #fff;
+            white-space: nowrap;
+            min-width: 46px;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+        }
+
+        .progress-bar-fill.met {
+            background: linear-gradient(90deg, #28a745, #34ce57);
+        }
+
+        .progress-bar-fill.not-met {
+            background: linear-gradient(90deg, #FF9900, #ffb03a);
+        }
+
+        .progress-target-marker {
+            position: absolute;
+            top: -20px;
+            width: 2px;
+            height: calc(100% + 20px);
+            background: rgba(255,255,255,0.55);
+            border-radius: 1px;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .progress-target-marker::before {
+            content: attr(data-label);
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px;
+            color: #ccc;
+            white-space: nowrap;
+            font-weight: 600;
+        }
+
+        .progress-numbers {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 12px;
+        }
+
+        .progress-num-card {
+            background: rgba(255,255,255,0.04);
+            border-radius: 10px;
+            padding: 14px 12px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .progress-num-card.highlight-needed {
+            border-color: rgba(255,153,0,0.4);
+            background: rgba(255,153,0,0.08);
+        }
+
+        .progress-num-card.highlight-needed.zero {
+            border-color: rgba(40,167,69,0.4);
+            background: rgba(40,167,69,0.08);
+        }
+
+        .progress-num-value {
+            font-size: 26px;
+            font-weight: bold;
+            color: #FF9900;
+            line-height: 1.1;
+        }
+
+        .progress-num-card.highlight-needed .progress-num-value {
+            color: #FF9900;
+        }
+
+        .progress-num-card.highlight-needed.zero .progress-num-value {
+            color: #28a745;
+        }
+
+        .progress-num-label {
+            color: #aaa;
+            font-size: 12px;
+            margin-top: 4px;
+            line-height: 1.3;
+        }
     </style>
 </head>
 <body>
@@ -1098,6 +1249,45 @@
                     <div class="stat-card" style="border: 2px solid #FF9900; background: rgba(255,153,0,0.08);" onclick="viewVehicleData('to-audit')">
                         <div class="stat-value" id="to-audit-count" style="color: #FF9900;">0</div>
                         <div class="stat-label" style="color: #FF9900; font-weight: bold;">🚐 To Be Audited</div>
+                    </div>
+                </div>
+
+                <!-- Audit Progress -->
+                <div class="progress-section">
+                    <h3>📊 Audit Progress</h3>
+                    <div class="progress-week-row">
+                        <span class="progress-week-badge" id="progress-week-badge">Week —</span>
+                        <span class="progress-target-badge" id="progress-target-badge">Target: <strong>—%</strong></span>
+                    </div>
+
+                    <div class="progress-bar-wrap">
+                        <div class="progress-bar-track">
+                            <div class="progress-bar-fill not-met" id="progress-fill" style="width:0%">0%</div>
+                            <div class="progress-target-marker" id="progress-target-marker" style="left:65%" data-label="Target 65%"></div>
+                        </div>
+                    </div>
+
+                    <div class="progress-numbers">
+                        <div class="progress-num-card">
+                            <div class="progress-num-value" id="prog-current-pct">0%</div>
+                            <div class="progress-num-label">Current %</div>
+                        </div>
+                        <div class="progress-num-card">
+                            <div class="progress-num-value" id="prog-target-pct">65%</div>
+                            <div class="progress-num-label">Target %</div>
+                        </div>
+                        <div class="progress-num-card">
+                            <div class="progress-num-value" id="prog-audited">0</div>
+                            <div class="progress-num-label">Audited</div>
+                        </div>
+                        <div class="progress-num-card">
+                            <div class="progress-num-value" id="prog-total">0</div>
+                            <div class="progress-num-label">Total to Audit</div>
+                        </div>
+                        <div class="progress-num-card highlight-needed" id="prog-needed-card">
+                            <div class="progress-num-value" id="prog-needed">0</div>
+                            <div class="progress-num-label">Still needed<br>to reach target</div>
+                        </div>
                     </div>
                 </div>
 
@@ -1819,6 +2009,56 @@
                 vehicleDatabase.filter(v => v.lastAudit).length;
             document.getElementById('to-audit-count').textContent = 
                 vehicleDatabase.filter(v => !v.lastAudit && !v.isGrounded).length;
+            updateAuditProgress();
+        }
+
+        // ── Audit Progress (week-based target) ──
+        function getISOWeek(d) {
+            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+            var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        }
+
+        function updateAuditProgress() {
+            const week      = getISOWeek(new Date());
+            const isOdd     = week % 2 !== 0;
+            const target    = isOdd ? 65 : 95;             // odd week → 65 %, even → 95 %
+            const total     = vehicleDatabase.filter(v => !v.isGrounded).length;   // active (not grounded)
+            const audited   = vehicleDatabase.filter(v => v.lastAudit && !v.isGrounded).length;
+            const pct       = total > 0 ? Math.round((audited / total) * 100) : 0;
+            const needed    = Math.max(0, Math.ceil(target * total / 100) - audited);
+            const targetMet = pct >= target;
+
+            // Week badge
+            document.getElementById('progress-week-badge').textContent =
+                `Week ${week} (${isOdd ? 'Odd – 1st check' : 'Even – 2nd check'})`;
+
+            // Target badge
+            document.getElementById('progress-target-badge').innerHTML =
+                `Target: <strong>${target}%</strong>`;
+
+            // Fill bar
+            const fill = document.getElementById('progress-fill');
+            fill.style.width = Math.min(pct, 100) + '%';
+            fill.textContent = pct + '%';
+            fill.className = 'progress-bar-fill ' + (targetMet ? 'met' : 'not-met');
+
+            // Target marker line position
+            const marker = document.getElementById('progress-target-marker');
+            marker.style.left = target + '%';
+            marker.setAttribute('data-label', 'Target ' + target + '%');
+
+            // Number cards
+            document.getElementById('prog-current-pct').textContent = pct + '%';
+            document.getElementById('prog-target-pct').textContent  = target + '%';
+            document.getElementById('prog-audited').textContent     = audited;
+            document.getElementById('prog-total').textContent       = total;
+            document.getElementById('prog-needed').textContent      = needed;
+
+            // Highlight the "needed" card: orange if still needed, green if zero
+            const neededCard = document.getElementById('prog-needed-card');
+            neededCard.className = 'progress-num-card highlight-needed' + (needed === 0 ? ' zero' : '');
         }
 
         // Database Clearing Functions
