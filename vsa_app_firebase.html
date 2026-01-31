@@ -825,7 +825,7 @@
                     <div class="file-input-wrapper">
                         <input type="file" id="dive-deep-file" accept=".csv" onchange="handleFileSelect(this, 'dive-deep')">
                         <label for="dive-deep-file" class="file-input-label">
-                            📄 Click to select Dive Deep CSV
+                            📄 Click to select Expected Vehicles (Active) CSV
                             <div class="file-name" id="dive-deep-name"></div>
                         </label>
                     </div>
@@ -841,7 +841,7 @@
                     <div class="file-input-wrapper">
                         <input type="file" id="grounded-file" accept=".xlsx" onchange="handleFileSelect(this, 'grounded')">
                         <label for="grounded-file" class="file-input-label">
-                            🚫 Click to select Current Grounded XLSX
+                            🚫 Click to select Current Grounded Vehicle XLSX
                             <div class="file-name" id="grounded-name"></div>
                         </label>
                     </div>
@@ -1348,37 +1348,48 @@
 
             let validationErrors = [];
 
-            // Check Dive Deep CSV
-            if (!diveDeepFile.includes('dive') && !diveDeepFile.includes('deep')) {
-                validationErrors.push('❌ Dive Deep file should contain "dive" or "deep" in filename');
+            // Check Dive Deep CSV (more flexible)
+            const isDiveDeepValid = 
+                (diveDeepFile.includes('dive') || diveDeepFile.includes('deep') || 
+                 diveDeepFile.includes('expected') || diveDeepFile.includes('vehicle'));
+            
+            if (!isDiveDeepValid) {
+                validationErrors.push('❌ First file should be Expected Vehicles CSV');
             }
             if (!diveDeepFile.endsWith('.csv')) {
-                validationErrors.push('❌ Dive Deep file must be a CSV file (.csv)');
+                validationErrors.push('❌ First file must be a CSV file (.csv)');
             }
 
-            // Check VIN Audit Detail XLSX
-            if (!vinAuditFile.includes('vin') || !vinAuditFile.includes('audit')) {
-                validationErrors.push('❌ VIN Audit file should contain "vin" and "audit" in filename');
+            // Check VIN Audit Detail XLSX (more flexible)
+            const isVinAuditValid = 
+                (vinAuditFile.includes('vin') && (vinAuditFile.includes('audit') || vinAuditFile.includes('detail')));
+            
+            if (!isVinAuditValid) {
+                validationErrors.push('❌ Second file should be VIN Audit Detail XLSX');
             }
             if (!vinAuditFile.endsWith('.xlsx') && !vinAuditFile.endsWith('.xls')) {
-                validationErrors.push('❌ VIN Audit file must be an Excel file (.xlsx or .xls)');
+                validationErrors.push('❌ Second file must be an Excel file (.xlsx or .xls)');
             }
 
-            // Check Current Grounded XLSX
-            if (!groundedFile.includes('ground')) {
-                validationErrors.push('❌ Grounded file should contain "ground" in filename');
+            // Check Current Grounded XLSX (more flexible)
+            const isGroundedValid = 
+                (groundedFile.includes('ground') || 
+                 (groundedFile.includes('current') && groundedFile.includes('veh')));
+            
+            if (!isGroundedValid) {
+                validationErrors.push('❌ Third file should be Current Grounded Vehicle XLSX');
             }
             if (!groundedFile.endsWith('.xlsx') && !groundedFile.endsWith('.xls')) {
-                validationErrors.push('❌ Grounded file must be an Excel file (.xlsx or .xls)');
+                validationErrors.push('❌ Third file must be an Excel file (.xlsx or .xls)');
             }
 
             // Show validation errors if any
             if (validationErrors.length > 0) {
                 const errorMessage = 'File validation failed:\n\n' + validationErrors.join('\n') + 
                     '\n\nPlease upload the correct files:\n' +
-                    '1. Dive Deep CSV (contains "dive" or "deep")\n' +
-                    '2. VIN Audit Detail XLSX (contains "vin" and "audit")\n' +
-                    '3. Current Grounded XLSX (contains "ground")';
+                    '1. Expected Vehicles (Active) CSV\n' +
+                    '2. VIN Audit Detail XLSX\n' +
+                    '3. Current Grounded Vehicle XLSX';
                 
                 alert(errorMessage);
                 showStatus('upload-status', validationErrors.join('<br>'), 'error');
