@@ -881,6 +881,95 @@
             transform: translateY(-5px);
             box-shadow: 0 8px 20px rgba(255, 153, 0, 0.3);
         }
+
+        /* Modal Filter / Sort Toolbar */
+        .modal-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 18px;
+            align-items: center;
+            padding: 14px 16px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .modal-toolbar input,
+        .modal-toolbar select {
+            background: #1a2332;
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 6px;
+            padding: 7px 10px;
+            font-size: 13px;
+            outline: none;
+            transition: border 0.2s;
+        }
+
+        .modal-toolbar input:focus,
+        .modal-toolbar select:focus {
+            border-color: #FF9900;
+        }
+
+        .modal-toolbar input::placeholder {
+            color: #667;
+        }
+
+        .modal-toolbar select option {
+            background: #1a2332;
+            color: #fff;
+        }
+
+        .toolbar-label {
+            color: #aaa;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .modal-toolbar .search-input {
+            flex: 1;
+            min-width: 140px;
+            max-width: 220px;
+        }
+
+        .modal-count {
+            color: #FF9900;
+            font-size: 13px;
+            font-weight: bold;
+            margin-left: auto;
+            white-space: nowrap;
+        }
+
+        .data-table th {
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .data-table th:hover {
+            color: #fff;
+            background: rgba(255,153,0,0.3);
+        }
+
+        .data-table th .sort-arrow {
+            display: inline-block;
+            margin-left: 4px;
+            font-size: 10px;
+            opacity: 0.4;
+        }
+
+        .data-table th.active-sort .sort-arrow {
+            opacity: 1;
+            color: #FF9900;
+        }
     </style>
 </head>
 <body>
@@ -1004,7 +1093,11 @@
                     </div>
                     <div class="stat-card" onclick="viewVehicleData('audited')">
                         <div class="stat-value" id="audited-count">0</div>
-                        <div class="stat-label">Recently Audited</div>
+                        <div class="stat-label">Already Audited</div>
+                    </div>
+                    <div class="stat-card" style="border: 2px solid #FF9900; background: rgba(255,153,0,0.08);" onclick="viewVehicleData('to-audit')">
+                        <div class="stat-value" id="to-audit-count" style="color: #FF9900;">0</div>
+                        <div class="stat-label" style="color: #FF9900; font-weight: bold;">🚐 To Be Audited</div>
                     </div>
                 </div>
 
@@ -1724,6 +1817,8 @@
                 vehicleDatabase.filter(v => v.isGrounded).length;
             document.getElementById('audited-count').textContent = 
                 vehicleDatabase.filter(v => v.lastAudit).length;
+            document.getElementById('to-audit-count').textContent = 
+                vehicleDatabase.filter(v => !v.lastAudit && !v.isGrounded).length;
         }
 
         // Database Clearing Functions
@@ -2200,84 +2295,185 @@
             document.getElementById('loading-overlay').classList.remove('show');
         }
 
-        // Modal Functions
-        let currentModalData = [];
+        // ============================================================
+        // MODAL — shared state
+        // ============================================================
+        let currentModalData = [];          // full (unfiltered) dataset
+        let currentModalType = '';           // 'vehicle' | 'audit'
+        let modalSortCol = null;            // currently sorted column key
+        let modalSortDir = 'asc';           // 'asc' | 'desc'
 
         function closeModal() {
             document.getElementById('data-modal').classList.remove('show');
         }
 
-        // View Vehicle Data
+        // ============================================================
+        // VEHICLE MODAL
+        // ============================================================
         function viewVehicleData(type) {
             let data = [];
             let title = '';
 
             switch(type) {
                 case 'active':
-                    data = vehicleDatabase;
-                    title = `All Active Vehicles (${vehicleDatabase.length})`;
+                    data = vehicleDatabase.slice();
+                    title = 'All Active Vehicles';
                     break;
                 case 'grounded':
                     data = vehicleDatabase.filter(v => v.isGrounded);
-                    title = `Grounded Vehicles (${data.length})`;
+                    title = 'Grounded Vehicles';
                     break;
                 case 'audited':
                     data = vehicleDatabase.filter(v => v.lastAudit);
-                    title = `Recently Audited Vehicles (${data.length})`;
+                    title = 'Already Audited Vehicles';
+                    break;
+                case 'to-audit':
+                    data = vehicleDatabase.filter(v => !v.lastAudit && !v.isGrounded);
+                    title = '🚐 Vans To Be Audited';
                     break;
             }
 
             if (data.length === 0) {
-                showModalEmpty(title, 'No vehicles found in this category');
+                showModalEmpty(title, 'No vehicles found in this category.');
                 return;
             }
 
             currentModalData = data;
+            currentModalType = 'vehicle';
+            modalSortCol = null;
+            modalSortDir = 'asc';
             document.getElementById('modal-title').textContent = title;
 
-            const tableHTML = `
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>License Plate</th>
-                            <th>VIN</th>
-                            <th>DSP</th>
-                            <th>Status</th>
-                            <th>Last Audit</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${data.map(v => `
-                            <tr>
-                                <td><strong>${v.licensePlate}</strong></td>
-                                <td>${v.vin}</td>
-                                <td>${v.dsp}</td>
-                                <td>
-                                    ${v.isGrounded ? 
-                                        '<span class="status-badge-table badge-grounded-table">GROUNDED</span>' : 
-                                        '<span class="status-badge-table badge-active-table">ACTIVE</span>'}
-                                </td>
-                                <td>${v.lastAudit || 'Not audited yet'}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
+            // Build unique DSP list for filter
+            const dspSet = [...new Set(data.map(v => v.dsp))].sort();
+
+            const toolbar = `
+                <div class="modal-toolbar">
+                    <input class="search-input" type="text" id="v-search" placeholder="🔍 Search plate / VIN…" oninput="renderVehicleTable()">
+                    <div class="toolbar-group">
+                        <span class="toolbar-label">DSP</span>
+                        <select id="v-dsp" onchange="renderVehicleTable()">
+                            <option value="">All</option>
+                            ${dspSet.map(d => `<option value="${d}">${d}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="toolbar-group">
+                        <span class="toolbar-label">Status</span>
+                        <select id="v-status" onchange="renderVehicleTable()">
+                            <option value="">All</option>
+                            <option value="active">Active</option>
+                            <option value="grounded">Grounded</option>
+                            <option value="audited">Audited</option>
+                            <option value="not-audited">Not Audited</option>
+                        </select>
+                    </div>
+                    <span class="modal-count" id="v-count">${data.length} vehicles</span>
+                </div>
+                <div id="v-table"></div>
             `;
 
-            document.getElementById('modal-body').innerHTML = tableHTML;
+            document.getElementById('modal-body').innerHTML = toolbar;
+            renderVehicleTable();
             document.getElementById('data-modal').classList.add('show');
         }
 
-        // View Audit Data
+        function renderVehicleTable() {
+            const search  = document.getElementById('v-search').value.toLowerCase();
+            const dsp     = document.getElementById('v-dsp').value;
+            const status  = document.getElementById('v-status').value;
+
+            let filtered = currentModalData.filter(v => {
+                if (search && !v.licensePlate.toLowerCase().includes(search) && !v.vin.toLowerCase().includes(search)) return false;
+                if (dsp && v.dsp !== dsp) return false;
+                if (status === 'active'     && v.isGrounded) return false;
+                if (status === 'grounded'   && !v.isGrounded) return false;
+                if (status === 'audited'    && !v.lastAudit) return false;
+                if (status === 'not-audited' && v.lastAudit) return false;
+                return true;
+            });
+
+            // Sort
+            if (modalSortCol) {
+                filtered.sort((a, b) => {
+                    let valA = getVehicleSortVal(a, modalSortCol);
+                    let valB = getVehicleSortVal(b, modalSortCol);
+                    if (valA < valB) return modalSortDir === 'asc' ? -1 : 1;
+                    if (valA > valB) return modalSortDir === 'asc' ?  1 : -1;
+                    return 0;
+                });
+            }
+
+            document.getElementById('v-count').textContent = filtered.length + ' vehicles';
+
+            const cols = [
+                { key: 'licensePlate', label: 'License Plate' },
+                { key: 'vin',          label: 'VIN' },
+                { key: 'dsp',          label: 'DSP' },
+                { key: 'status',       label: 'Status' },
+                { key: 'lastAudit',    label: 'Last Audit' }
+            ];
+
+            const headerHTML = cols.map(c => {
+                let arrow = '';
+                let cls = '';
+                if (modalSortCol === c.key) {
+                    arrow = modalSortDir === 'asc' ? '▲' : '▼';
+                    cls = ' class="active-sort"';
+                }
+                return `<th${cls} onclick="sortVehicle('${c.key}')">${c.label}<span class="sort-arrow">${arrow || '⇅'}</span></th>`;
+            }).join('');
+
+            const bodyHTML = filtered.map(v => `
+                <tr>
+                    <td><strong>${v.licensePlate}</strong></td>
+                    <td>${v.vin}</td>
+                    <td>${v.dsp}</td>
+                    <td>${v.isGrounded
+                        ? '<span class="status-badge-table badge-grounded-table">GROUNDED</span>'
+                        : '<span class="status-badge-table badge-active-table">ACTIVE</span>'}</td>
+                    <td>${v.lastAudit || '—'}</td>
+                </tr>
+            `).join('');
+
+            document.getElementById('v-table').innerHTML = `
+                <table class="data-table">
+                    <thead><tr>${headerHTML}</tr></thead>
+                    <tbody>${bodyHTML || '<tr><td colspan="5" style="text-align:center;color:#aaa;padding:30px;">No matching vehicles</td></tr>'}</tbody>
+                </table>
+            `;
+        }
+
+        function getVehicleSortVal(v, col) {
+            switch(col) {
+                case 'licensePlate': return v.licensePlate.toLowerCase();
+                case 'vin':          return v.vin.toLowerCase();
+                case 'dsp':          return v.dsp.toLowerCase();
+                case 'status':       return v.isGrounded ? 'grounded' : 'active';
+                case 'lastAudit':    return v.lastAudit || '';
+                default: return '';
+            }
+        }
+
+        function sortVehicle(col) {
+            if (modalSortCol === col) {
+                modalSortDir = modalSortDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                modalSortCol = col;
+                modalSortDir = 'asc';
+            }
+            renderVehicleTable();
+        }
+
+        // ============================================================
+        // AUDIT MODAL
+        // ============================================================
         async function viewAuditData(type) {
             try {
-                showLoading('Loading audit data...');
-                
+                showLoading('Loading audit data…');
+
                 const snapshot = await database.ref('audits').once('value');
                 let audits = [];
-                snapshot.forEach(child => {
-                    audits.push(child.val());
-                });
+                snapshot.forEach(child => { audits.push(child.val()); });
 
                 let data = [];
                 let title = '';
@@ -2286,68 +2482,70 @@
                 switch(type) {
                     case 'all':
                         data = audits;
-                        title = `All Audits (${audits.length})`;
+                        title = 'All Audits';
                         break;
                     case 'passed':
                         data = audits.filter(a => a.result === 'PASSED');
-                        title = `Passed Audits (${data.length})`;
+                        title = 'Passed Audits';
                         break;
                     case 'failed':
                         data = audits.filter(a => a.result === 'FAILED');
-                        title = `Failed Audits (${data.length})`;
+                        title = 'Failed Audits';
                         break;
                     case 'today':
                         data = audits.filter(a => a.date === today);
-                        title = `Today's Audits (${data.length})`;
+                        title = "Today's Audits";
                         break;
                 }
 
                 hideLoading();
 
                 if (data.length === 0) {
-                    showModalEmpty(title, 'No audits found in this category');
+                    showModalEmpty(title, 'No audits found in this category.');
                     return;
                 }
 
                 currentModalData = data;
+                currentModalType = 'audit';
+                modalSortCol = null;
+                modalSortDir = 'asc';
                 document.getElementById('modal-title').textContent = title;
 
-                const tableHTML = `
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Time</th>
-                                <th>License Plate</th>
-                                <th>VIN</th>
-                                <th>DSP</th>
-                                <th>Result</th>
-                                <th>Problem</th>
-                                <th>User</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${data.map(a => `
-                                <tr>
-                                    <td>${a.date}</td>
-                                    <td>${a.time}</td>
-                                    <td><strong>${a.licensePlate}</strong></td>
-                                    <td>${a.vin}</td>
-                                    <td>${a.dsp}</td>
-                                    <td>
-                                        ${a.result === 'PASSED' ? 
-                                            '<span class="status-badge-table badge-passed-table">PASSED</span>' : 
-                                            '<span class="status-badge-table badge-failed-table">FAILED</span>'}
-                                    </td>
-                                    <td>${a.problem || '-'}</td>
-                                    <td>${a.user || 'Unknown'}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
+                const dspSet  = [...new Set(data.map(a => a.dsp))].sort();
+                const userSet = [...new Set(data.map(a => a.user || 'Unknown'))].sort();
+
+                const toolbar = `
+                    <div class="modal-toolbar">
+                        <input class="search-input" type="text" id="a-search" placeholder="🔍 Search plate / VIN…" oninput="renderAuditTable()">
+                        <div class="toolbar-group">
+                            <span class="toolbar-label">Result</span>
+                            <select id="a-result" onchange="renderAuditTable()">
+                                <option value="">All</option>
+                                <option value="PASSED">Passed</option>
+                                <option value="FAILED">Failed</option>
+                            </select>
+                        </div>
+                        <div class="toolbar-group">
+                            <span class="toolbar-label">DSP</span>
+                            <select id="a-dsp" onchange="renderAuditTable()">
+                                <option value="">All</option>
+                                ${dspSet.map(d => `<option value="${d}">${d}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="toolbar-group">
+                            <span class="toolbar-label">User</span>
+                            <select id="a-user" onchange="renderAuditTable()">
+                                <option value="">All</option>
+                                ${userSet.map(u => `<option value="${u}">${u}</option>`).join('')}
+                            </select>
+                        </div>
+                        <span class="modal-count" id="a-count">${data.length} audits</span>
+                    </div>
+                    <div id="a-table"></div>
                 `;
 
-                document.getElementById('modal-body').innerHTML = tableHTML;
+                document.getElementById('modal-body').innerHTML = toolbar;
+                renderAuditTable();
                 document.getElementById('data-modal').classList.add('show');
 
             } catch (error) {
@@ -2357,82 +2555,171 @@
             }
         }
 
+        function renderAuditTable() {
+            const search = document.getElementById('a-search').value.toLowerCase();
+            const result = document.getElementById('a-result').value;
+            const dsp    = document.getElementById('a-dsp').value;
+            const user   = document.getElementById('a-user').value;
+
+            let filtered = currentModalData.filter(a => {
+                if (search && !a.licensePlate.toLowerCase().includes(search) && !a.vin.toLowerCase().includes(search)) return false;
+                if (result && a.result !== result) return false;
+                if (dsp    && a.dsp !== dsp) return false;
+                if (user   && (a.user || 'Unknown') !== user) return false;
+                return true;
+            });
+
+            // Sort
+            if (modalSortCol) {
+                filtered.sort((a, b) => {
+                    let valA = getAuditSortVal(a, modalSortCol);
+                    let valB = getAuditSortVal(b, modalSortCol);
+                    if (valA < valB) return modalSortDir === 'asc' ? -1 : 1;
+                    if (valA > valB) return modalSortDir === 'asc' ?  1 : -1;
+                    return 0;
+                });
+            }
+
+            document.getElementById('a-count').textContent = filtered.length + ' audits';
+
+            const cols = [
+                { key: 'date',         label: 'Date' },
+                { key: 'time',         label: 'Time' },
+                { key: 'licensePlate', label: 'License Plate' },
+                { key: 'vin',          label: 'VIN' },
+                { key: 'dsp',          label: 'DSP' },
+                { key: 'result',       label: 'Result' },
+                { key: 'problem',      label: 'Problem' },
+                { key: 'user',         label: 'User' }
+            ];
+
+            const headerHTML = cols.map(c => {
+                let arrow = '';
+                let cls = '';
+                if (modalSortCol === c.key) {
+                    arrow = modalSortDir === 'asc' ? '▲' : '▼';
+                    cls = ' class="active-sort"';
+                }
+                return `<th${cls} onclick="sortAudit('${c.key}')">${c.label}<span class="sort-arrow">${arrow || '⇅'}</span></th>`;
+            }).join('');
+
+            const bodyHTML = filtered.map(a => `
+                <tr>
+                    <td>${a.date}</td>
+                    <td>${a.time}</td>
+                    <td><strong>${a.licensePlate}</strong></td>
+                    <td>${a.vin}</td>
+                    <td>${a.dsp}</td>
+                    <td>${a.result === 'PASSED'
+                        ? '<span class="status-badge-table badge-passed-table">PASSED</span>'
+                        : '<span class="status-badge-table badge-failed-table">FAILED</span>'}</td>
+                    <td>${a.problem || '—'}</td>
+                    <td>${a.user || 'Unknown'}</td>
+                </tr>
+            `).join('');
+
+            document.getElementById('a-table').innerHTML = `
+                <table class="data-table">
+                    <thead><tr>${headerHTML}</tr></thead>
+                    <tbody>${bodyHTML || '<tr><td colspan="8" style="text-align:center;color:#aaa;padding:30px;">No matching audits</td></tr>'}</tbody>
+                </table>
+            `;
+        }
+
+        function getAuditSortVal(a, col) {
+            switch(col) {
+                case 'date':         return a.date || '';
+                case 'time':         return a.time || '';
+                case 'licensePlate': return a.licensePlate.toLowerCase();
+                case 'vin':          return a.vin.toLowerCase();
+                case 'dsp':          return a.dsp.toLowerCase();
+                case 'result':       return a.result || '';
+                case 'problem':      return (a.problem || '').toLowerCase();
+                case 'user':         return (a.user || 'unknown').toLowerCase();
+                default: return '';
+            }
+        }
+
+        function sortAudit(col) {
+            if (modalSortCol === col) {
+                modalSortDir = modalSortDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                modalSortCol = col;
+                modalSortDir = 'asc';
+            }
+            renderAuditTable();
+        }
+
+        // ============================================================
+        // EMPTY STATE
+        // ============================================================
         function showModalEmpty(title, message) {
             document.getElementById('modal-title').textContent = title;
             document.getElementById('modal-body').innerHTML = `
-                <div class="empty-data">
-                    <p>${message}</p>
-                </div>
+                <div class="empty-data"><p>${message}</p></div>
             `;
             document.getElementById('data-modal').classList.add('show');
         }
 
-        // Export Modal Data to CSV
+        // ============================================================
+        // EXPORT — exports the currently *visible* (filtered) rows
+        // ============================================================
         function exportModalData() {
-            if (currentModalData.length === 0) {
-                alert('No data to export');
-                return;
-            }
+            // Re-read the currently rendered table rows so we export what the user sees
+            const rows = document.querySelectorAll('.data-table tbody tr');
+            if (rows.length === 0) { alert('No data to export.'); return; }
 
             const modalTitle = document.getElementById('modal-title').textContent;
-            let csv = '';
-            let filename = '';
+            const date = new Date().toISOString().split('T')[0];
+            let csv = '', filename = '';
 
-            // Check if it's vehicle data or audit data
-            if (currentModalData[0].licensePlate && currentModalData[0].vin && !currentModalData[0].result) {
-                // Vehicle data
-                filename = `vehicles_${modalTitle.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
-                
-                const headers = ['License Plate', 'VIN', 'DSP', 'Status', 'Last Audit'];
-                const rows = currentModalData.map(v => [
-                    v.licensePlate,
-                    v.vin,
-                    v.dsp,
-                    v.isGrounded ? 'GROUNDED' : 'ACTIVE',
-                    v.lastAudit || 'Not audited yet'
-                ]);
-
-                csv = [headers, ...rows].map(row => 
-                    row.map(cell => `"${cell}"`).join(',')
-                ).join('\n');
-
+            if (currentModalType === 'vehicle') {
+                filename = `vehicles_${modalTitle.toLowerCase().replace(/[^a-z0-9]/g,'_')}_${date}.csv`;
+                const headers = ['License Plate','VIN','DSP','Status','Last Audit'];
+                // pull visible filtered data by re-running the same filter logic
+                const search  = document.getElementById('v-search').value.toLowerCase();
+                const dsp     = document.getElementById('v-dsp').value;
+                const status  = document.getElementById('v-status').value;
+                let filtered = currentModalData.filter(v => {
+                    if (search && !v.licensePlate.toLowerCase().includes(search) && !v.vin.toLowerCase().includes(search)) return false;
+                    if (dsp && v.dsp !== dsp) return false;
+                    if (status === 'active'      && v.isGrounded) return false;
+                    if (status === 'grounded'    && !v.isGrounded) return false;
+                    if (status === 'audited'     && !v.lastAudit) return false;
+                    if (status === 'not-audited' && v.lastAudit) return false;
+                    return true;
+                });
+                const dataRows = filtered.map(v => [v.licensePlate, v.vin, v.dsp, v.isGrounded?'GROUNDED':'ACTIVE', v.lastAudit||'']);
+                csv = [headers,...dataRows].map(r => r.map(c=>`"${c}"`).join(',')).join('\n');
             } else {
-                // Audit data
-                filename = `audits_${modalTitle.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
-                
-                const headers = ['Date', 'Time', 'License Plate', 'VIN', 'DSP', 'Result', 'Problem', 'User'];
-                const rows = currentModalData.map(a => [
-                    a.date,
-                    a.time,
-                    a.licensePlate,
-                    a.vin,
-                    a.dsp,
-                    a.result,
-                    a.problem || '',
-                    a.user || ''
-                ]);
-
-                csv = [headers, ...rows].map(row => 
-                    row.map(cell => `"${cell}"`).join(',')
-                ).join('\n');
+                filename = `audits_${modalTitle.toLowerCase().replace(/[^a-z0-9]/g,'_')}_${date}.csv`;
+                const headers = ['Date','Time','License Plate','VIN','DSP','Result','Problem','User'];
+                const search = document.getElementById('a-search').value.toLowerCase();
+                const result = document.getElementById('a-result').value;
+                const dsp    = document.getElementById('a-dsp').value;
+                const user   = document.getElementById('a-user').value;
+                let filtered = currentModalData.filter(a => {
+                    if (search && !a.licensePlate.toLowerCase().includes(search) && !a.vin.toLowerCase().includes(search)) return false;
+                    if (result && a.result !== result) return false;
+                    if (dsp    && a.dsp !== dsp) return false;
+                    if (user   && (a.user||'Unknown') !== user) return false;
+                    return true;
+                });
+                const dataRows = filtered.map(a => [a.date, a.time, a.licensePlate, a.vin, a.dsp, a.result, a.problem||'', a.user||'']);
+                csv = [headers,...dataRows].map(r => r.map(c=>`"${c}"`).join(',')).join('\n');
             }
 
             const blob = new Blob([csv], { type: 'text/csv' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href     = url;
             a.download = filename;
             a.click();
-
-            showStatus('upload-status', `✅ Exported ${currentModalData.length} records to ${filename}`, 'success');
         }
 
-        // Close modal when clicking outside
+        // Close modal when clicking backdrop
         document.addEventListener('click', function(e) {
-            const modal = document.getElementById('data-modal');
-            if (e.target === modal) {
-                closeModal();
-            }
+            if (e.target === document.getElementById('data-modal')) closeModal();
         });
     </script>
 </body>
