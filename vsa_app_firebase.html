@@ -745,6 +745,142 @@
             max-height: 0;
             opacity: 0;
         }
+
+        /* Data View Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            overflow: auto;
+        }
+
+        .modal.show {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: #232F3E;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 1200px;
+            width: 100%;
+            max-height: 80vh;
+            overflow: auto;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #FF9900;
+            padding-bottom: 15px;
+        }
+
+        .modal-header h2 {
+            color: #FF9900;
+            margin: 0;
+        }
+
+        .modal-close {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .modal-close:hover {
+            background: #c82333;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .data-table th {
+            background: rgba(255, 153, 0, 0.2);
+            color: #FF9900;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+            border-bottom: 2px solid #FF9900;
+        }
+
+        .data-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .data-table tr:hover {
+            background: rgba(255, 153, 0, 0.1);
+        }
+
+        .status-badge-table {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .badge-active-table {
+            background: #28a745;
+            color: white;
+        }
+
+        .badge-grounded-table {
+            background: #dc3545;
+            color: white;
+        }
+
+        .badge-passed-table {
+            background: #28a745;
+            color: white;
+        }
+
+        .badge-failed-table {
+            background: #dc3545;
+            color: white;
+        }
+
+        .modal-actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .empty-data {
+            text-align: center;
+            padding: 40px;
+            color: #aaa;
+            font-size: 18px;
+        }
+
+        .stat-card {
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(255, 153, 0, 0.3);
+        }
     </style>
 </head>
 <body>
@@ -856,16 +992,17 @@
 
             <div class="upload-section">
                 <h3>📈 Current Database Status</h3>
+                <p style="color: #aaa; margin-bottom: 15px; font-size: 13px;">Click any card to view details</p>
                 <div class="stats-grid">
-                    <div class="stat-card">
+                    <div class="stat-card" onclick="viewVehicleData('active')">
                         <div class="stat-value" id="total-vehicles">0</div>
                         <div class="stat-label">Active Vehicles</div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" onclick="viewVehicleData('grounded')">
                         <div class="stat-value" id="grounded-count">0</div>
                         <div class="stat-label">Grounded Vehicles</div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" onclick="viewVehicleData('audited')">
                         <div class="stat-value" id="audited-count">0</div>
                         <div class="stat-label">Recently Audited</div>
                     </div>
@@ -987,20 +1124,21 @@
 
             <div class="download-section">
                 <h3>📈 Audit Statistics</h3>
+                <p style="color: #aaa; margin-bottom: 15px; font-size: 13px;">Click any card to view details</p>
                 <div class="stats-grid">
-                    <div class="stat-card">
+                    <div class="stat-card" onclick="viewAuditData('all')">
                         <div class="stat-value" id="report-total-audits">0</div>
                         <div class="stat-label">Total Audits</div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" onclick="viewAuditData('passed')">
                         <div class="stat-value" id="report-passed">0</div>
                         <div class="stat-label">Passed (OK)</div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" onclick="viewAuditData('failed')">
                         <div class="stat-value" id="report-failed">0</div>
                         <div class="stat-label">Failed (Blocked)</div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" onclick="viewAuditData('today')">
                         <div class="stat-value" id="report-today">0</div>
                         <div class="stat-label">Today's Audits</div>
                     </div>
@@ -1020,6 +1158,24 @@
                 </div>
 
                 <div id="download-status"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data View Modal -->
+    <div class="modal" id="data-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Data View</h2>
+                <button class="modal-close" onclick="closeModal()">✕ Close</button>
+            </div>
+            <div id="modal-body">
+                <!-- Data will be inserted here -->
+            </div>
+            <div class="modal-actions">
+                <button onclick="exportModalData()" class="btn btn-success">
+                    📥 Export to CSV
+                </button>
             </div>
         </div>
     </div>
@@ -2043,6 +2199,241 @@
         function hideLoading() {
             document.getElementById('loading-overlay').classList.remove('show');
         }
+
+        // Modal Functions
+        let currentModalData = [];
+
+        function closeModal() {
+            document.getElementById('data-modal').classList.remove('show');
+        }
+
+        // View Vehicle Data
+        function viewVehicleData(type) {
+            let data = [];
+            let title = '';
+
+            switch(type) {
+                case 'active':
+                    data = vehicleDatabase;
+                    title = `All Active Vehicles (${vehicleDatabase.length})`;
+                    break;
+                case 'grounded':
+                    data = vehicleDatabase.filter(v => v.isGrounded);
+                    title = `Grounded Vehicles (${data.length})`;
+                    break;
+                case 'audited':
+                    data = vehicleDatabase.filter(v => v.lastAudit);
+                    title = `Recently Audited Vehicles (${data.length})`;
+                    break;
+            }
+
+            if (data.length === 0) {
+                showModalEmpty(title, 'No vehicles found in this category');
+                return;
+            }
+
+            currentModalData = data;
+            document.getElementById('modal-title').textContent = title;
+
+            const tableHTML = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>License Plate</th>
+                            <th>VIN</th>
+                            <th>DSP</th>
+                            <th>Status</th>
+                            <th>Last Audit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.map(v => `
+                            <tr>
+                                <td><strong>${v.licensePlate}</strong></td>
+                                <td>${v.vin}</td>
+                                <td>${v.dsp}</td>
+                                <td>
+                                    ${v.isGrounded ? 
+                                        '<span class="status-badge-table badge-grounded-table">GROUNDED</span>' : 
+                                        '<span class="status-badge-table badge-active-table">ACTIVE</span>'}
+                                </td>
+                                <td>${v.lastAudit || 'Not audited yet'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            document.getElementById('modal-body').innerHTML = tableHTML;
+            document.getElementById('data-modal').classList.add('show');
+        }
+
+        // View Audit Data
+        async function viewAuditData(type) {
+            try {
+                showLoading('Loading audit data...');
+                
+                const snapshot = await database.ref('audits').once('value');
+                let audits = [];
+                snapshot.forEach(child => {
+                    audits.push(child.val());
+                });
+
+                let data = [];
+                let title = '';
+                const today = new Date().toLocaleDateString();
+
+                switch(type) {
+                    case 'all':
+                        data = audits;
+                        title = `All Audits (${audits.length})`;
+                        break;
+                    case 'passed':
+                        data = audits.filter(a => a.result === 'PASSED');
+                        title = `Passed Audits (${data.length})`;
+                        break;
+                    case 'failed':
+                        data = audits.filter(a => a.result === 'FAILED');
+                        title = `Failed Audits (${data.length})`;
+                        break;
+                    case 'today':
+                        data = audits.filter(a => a.date === today);
+                        title = `Today's Audits (${data.length})`;
+                        break;
+                }
+
+                hideLoading();
+
+                if (data.length === 0) {
+                    showModalEmpty(title, 'No audits found in this category');
+                    return;
+                }
+
+                currentModalData = data;
+                document.getElementById('modal-title').textContent = title;
+
+                const tableHTML = `
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>License Plate</th>
+                                <th>VIN</th>
+                                <th>DSP</th>
+                                <th>Result</th>
+                                <th>Problem</th>
+                                <th>User</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.map(a => `
+                                <tr>
+                                    <td>${a.date}</td>
+                                    <td>${a.time}</td>
+                                    <td><strong>${a.licensePlate}</strong></td>
+                                    <td>${a.vin}</td>
+                                    <td>${a.dsp}</td>
+                                    <td>
+                                        ${a.result === 'PASSED' ? 
+                                            '<span class="status-badge-table badge-passed-table">PASSED</span>' : 
+                                            '<span class="status-badge-table badge-failed-table">FAILED</span>'}
+                                    </td>
+                                    <td>${a.problem || '-'}</td>
+                                    <td>${a.user || 'Unknown'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+
+                document.getElementById('modal-body').innerHTML = tableHTML;
+                document.getElementById('data-modal').classList.add('show');
+
+            } catch (error) {
+                hideLoading();
+                console.error('Error loading audit data:', error);
+                alert('Error loading audit data: ' + error.message);
+            }
+        }
+
+        function showModalEmpty(title, message) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-body').innerHTML = `
+                <div class="empty-data">
+                    <p>${message}</p>
+                </div>
+            `;
+            document.getElementById('data-modal').classList.add('show');
+        }
+
+        // Export Modal Data to CSV
+        function exportModalData() {
+            if (currentModalData.length === 0) {
+                alert('No data to export');
+                return;
+            }
+
+            const modalTitle = document.getElementById('modal-title').textContent;
+            let csv = '';
+            let filename = '';
+
+            // Check if it's vehicle data or audit data
+            if (currentModalData[0].licensePlate && currentModalData[0].vin && !currentModalData[0].result) {
+                // Vehicle data
+                filename = `vehicles_${modalTitle.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+                
+                const headers = ['License Plate', 'VIN', 'DSP', 'Status', 'Last Audit'];
+                const rows = currentModalData.map(v => [
+                    v.licensePlate,
+                    v.vin,
+                    v.dsp,
+                    v.isGrounded ? 'GROUNDED' : 'ACTIVE',
+                    v.lastAudit || 'Not audited yet'
+                ]);
+
+                csv = [headers, ...rows].map(row => 
+                    row.map(cell => `"${cell}"`).join(',')
+                ).join('\n');
+
+            } else {
+                // Audit data
+                filename = `audits_${modalTitle.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+                
+                const headers = ['Date', 'Time', 'License Plate', 'VIN', 'DSP', 'Result', 'Problem', 'User'];
+                const rows = currentModalData.map(a => [
+                    a.date,
+                    a.time,
+                    a.licensePlate,
+                    a.vin,
+                    a.dsp,
+                    a.result,
+                    a.problem || '',
+                    a.user || ''
+                ]);
+
+                csv = [headers, ...rows].map(row => 
+                    row.map(cell => `"${cell}"`).join(',')
+                ).join('\n');
+            }
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+
+            showStatus('upload-status', `✅ Exported ${currentModalData.length} records to ${filename}`, 'success');
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(e) {
+            const modal = document.getElementById('data-modal');
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
     </script>
 </body>
 </html>
