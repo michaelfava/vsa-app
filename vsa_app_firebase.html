@@ -328,34 +328,35 @@
             color: #FF9900;
         }
 
-        /* ── Audit page: step-based single-screen ── */
+        /* ── Audit page: single scrollable page ── */
         #audit-page .container {
-            display: flex;
-            flex-direction: column;
-            height: calc(100vh - 0px);
-            max-height: 100vh;
-            overflow: hidden;
             padding: 0;
         }
 
         #audit-page .header {
-            flex-shrink: 0;
-            padding: 10px 16px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 12px 16px;
+            border-radius: 0 0 14px 14px;
+            margin-bottom: 0;
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 8px;
+            flex-wrap: nowrap;
         }
 
         #audit-page .header h2 {
             font-size: 18px;
             margin: 0;
+            color: #FF9900;
             white-space: nowrap;
         }
 
         #audit-page .header-actions {
             display: flex;
             gap: 6px;
+            flex-wrap: nowrap;
         }
 
         #audit-page .header-actions button {
@@ -363,44 +364,66 @@
             font-size: 12px;
         }
 
-        /* Step panels: only one visible at a time, fills remaining space */
-        .audit-step {
-            display: none;
-            flex-direction: column;
-            flex: 1;
-            overflow: hidden;
-            padding: 12px 16px 16px;
-        }
-
-        .audit-step.active {
+        /* Search bar: attached directly under header */
+        .audit-search-bar {
+            background: rgba(255,255,255,0.08);
+            padding: 12px 14px;
             display: flex;
+            gap: 8px;
+            align-items: center;
         }
 
-        /* Step 1: Search */
-        #step-search {
-            justify-content: center;
-        }
-
-        #step-search .search-section {
-            width: 100%;
-            max-width: 480px;
-            margin: 0 auto;
-        }
-
-        /* Step 2: Vehicle info — fills screen, buttons pinned at bottom */
-        #step-vehicle {
-            justify-content: flex-start;
-        }
-
-        .vehicle-info-card {
+        .audit-search-bar .autocomplete-wrapper {
             flex: 1;
+            min-width: 0;
+        }
+
+        .audit-search-bar #license-plate-input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 17px;
+            text-transform: uppercase;
+            box-sizing: border-box;
+        }
+
+        .audit-search-bar #license-plate-input:focus {
+            outline: none;
+            border-color: #FF9900;
+        }
+
+        .audit-search-bar .btn-check {
+            flex-shrink: 0;
+            padding: 12px 16px;
+            background: #FF9900;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Body area below search bar */
+        .audit-body {
+            padding: 12px 14px 24px;
+        }
+
+        /* Vehicle info card */
+        .vehicle-info-card {
             background: rgba(255,255,255,0.07);
             border-radius: 14px;
-            padding: 18px;
-            display: flex;
-            flex-direction: column;
-            gap: 0;
-            overflow: hidden;
+            padding: 16px;
+            display: none;
+        }
+
+        .vehicle-info-card.show {
+            display: block;
         }
 
         .vehicle-info-card .grounded-warning {
@@ -410,6 +433,7 @@
             padding: 14px;
             animation: pulseGroundedWarning 1.5s ease-in-out infinite;
             text-align: center;
+            margin-bottom: 12px;
         }
 
         .vehicle-info-card .grounded-warning-text {
@@ -422,7 +446,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 0;
+            padding: 9px 0;
             border-bottom: 1px solid rgba(255,255,255,0.08);
         }
 
@@ -442,10 +466,10 @@
             font-weight: 600;
         }
 
-        /* Last audit row highlight */
+        /* Last audit highlight box */
         .last-audit-box {
             border-radius: 10px;
-            padding: 12px 14px;
+            padding: 11px 14px;
             margin-top: 10px;
             display: flex;
             justify-content: space-between;
@@ -470,18 +494,33 @@
         .last-audit-box.already-audited .info-label,
         .last-audit-box.already-audited .info-value { color: #28a745; }
 
-        /* Decision buttons: big, pinned at bottom */
+        /* "Check another" link-button */
+        .btn-check-another {
+            display: block;
+            width: 100%;
+            margin-top: 12px;
+            padding: 9px;
+            background: transparent;
+            color: #aaa;
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn-check-another:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+
+        /* Decision buttons: immediately after info, no blank push */
         .decision-buttons {
             display: flex;
             gap: 12px;
-            margin-top: auto;
-            padding-top: 14px;
-            flex-shrink: 0;
+            margin-top: 14px;
         }
 
         .decision-buttons button {
             flex: 1;
-            padding: 18px 10px;
+            padding: 16px 10px;
             font-size: 17px;
             font-weight: bold;
             border: none;
@@ -502,39 +541,38 @@
             box-shadow: 0 4px 15px rgba(220,53,69,0.4);
         }
 
-        /* Step 3a: Problem input (VSA BLOCK path) */
-        #step-problem {
-            justify-content: flex-start;
-        }
-
+        /* Problem card (inline, below decision buttons) */
         .problem-card {
-            flex: 1;
             background: rgba(220,53,69,0.1);
             border: 2px solid #dc3545;
             border-radius: 14px;
-            padding: 18px;
-            display: flex;
-            flex-direction: column;
+            padding: 16px;
+            margin-top: 14px;
+            display: none;
+        }
+
+        .problem-card.show {
+            display: block;
         }
 
         .problem-card h3 {
-            margin: 0 0 12px;
+            margin: 0 0 10px;
             color: #dc3545;
-            font-size: 17px;
+            font-size: 16px;
         }
 
         #problem-description {
-            flex: 1;
             width: 100%;
-            min-height: 0;
+            min-height: 90px;
             padding: 12px;
             border: 2px solid rgba(255,255,255,0.2);
             background: rgba(255,255,255,0.1);
             border-radius: 8px;
             color: #fff;
             font-size: 16px;
-            resize: none;
+            resize: vertical;
             outline: none;
+            box-sizing: border-box;
         }
 
         #problem-description:focus {
@@ -542,31 +580,19 @@
         }
 
         .problem-card .btn-submit-problem {
-            margin-top: 12px;
-            padding: 16px;
+            margin-top: 10px;
+            width: 100%;
+            padding: 14px;
             background: #dc3545;
             color: #fff;
             border: none;
             border-radius: 12px;
-            font-size: 17px;
+            font-size: 16px;
             font-weight: bold;
             cursor: pointer;
-            flex-shrink: 0;
         }
 
-        .problem-card .btn-back {
-            margin-top: 8px;
-            padding: 10px;
-            background: transparent;
-            color: #aaa;
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 8px;
-            font-size: 14px;
-            cursor: pointer;
-            flex-shrink: 0;
-        }
-
-        /* Step 4: QR overlay — full screen */
+        /* QR overlay — full screen, on top of everything */
         .qr-overlay {
             position: fixed;
             inset: 0;
@@ -761,8 +787,22 @@
                 width: 100%;
             }
 
-            .action-buttons {
-                flex-direction: column;
+            /* Audit page header stays horizontal on mobile */
+            #audit-page .header {
+                flex-direction: row;
+                align-items: center;
+            }
+
+            #audit-page .header-actions {
+                flex-direction: row;
+            }
+
+            #audit-page .header-actions button {
+                width: auto;
+            }
+
+            #audit-page .container {
+                padding: 0;
             }
 
             .download-buttons {
@@ -1440,29 +1480,25 @@
             <div class="header">
                 <h2>🔍 VSA Audit</h2>
                 <div class="header-actions">
-                    <button onclick="showPage('upload-page')" class="btn-secondary">Data</button>
-                    <button onclick="showPage('download-page')" class="btn-secondary">Reports</button>
-                    <button onclick="logout()" class="btn-danger">Out</button>
+                    <button onclick="showPage('upload-page')" class="btn-secondary">Data Management</button>
+                    <button onclick="showPage('download-page')" class="btn-secondary">View Reports</button>
+                    <button onclick="logout()" class="btn-danger">Logout</button>
                 </div>
             </div>
 
-            <!-- Step 1: Search -->
-            <div class="audit-step active" id="step-search">
-                <div class="search-section">
-                    <h3 style="margin:0 0 12px; color:#fff; font-size:16px;">⌨️ Enter License Plate</h3>
-                    <div class="autocomplete-wrapper">
-                        <input type="text" id="license-plate-input" placeholder="e.g. HB449JJ" autocomplete="off">
-                        <div id="autocomplete-list"></div>
-                    </div>
-                    <button onclick="searchVehicle()" class="btn btn-primary" style="width:100%; margin-top:14px; padding:14px; font-size:17px;">
-                        🔍 Check Vehicle
-                    </button>
+            <!-- Search bar: stuck under header -->
+            <div class="audit-search-bar">
+                <div class="autocomplete-wrapper">
+                    <input type="text" id="license-plate-input" placeholder="e.g. HB449JJ" autocomplete="off">
+                    <div id="autocomplete-list"></div>
                 </div>
+                <button onclick="searchVehicle()" class="btn-check">🔍</button>
             </div>
 
-            <!-- Step 2: Vehicle info + decision -->
-            <div class="audit-step" id="step-vehicle">
-                <div class="vehicle-info-card">
+            <!-- Body: vehicle card + decisions + problem (all inline) -->
+            <div class="audit-body">
+
+                <div class="vehicle-info-card" id="vehicle-info-card">
                     <div class="grounded-warning" id="grounded-warning" style="display:none;">
                         <div class="grounded-warning-text">🚫 VEHICLE GROUNDED 🚫<br>THIS VAN CANNOT GO OUT</div>
                     </div>
@@ -1472,7 +1508,7 @@
                     </div>
                     <div class="info-row">
                         <span class="info-label">VIN</span>
-                        <span class="info-value" id="info-vin" style="font-size:13px; word-break:break-all;"></span>
+                        <span class="info-value" id="info-vin" style="font-size:13px; word-break:break-all; text-align:right;"></span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">DSP</span>
@@ -1486,21 +1522,22 @@
                         <span class="info-label">⚠️ Last Audit</span>
                         <span class="info-value" id="info-last-audit">—</span>
                     </div>
-                </div>
-                <div class="decision-buttons">
-                    <button onclick="vanOK()" class="btn-van-ok">✅ VAN OK</button>
-                    <button onclick="vsaBlock()" class="btn-vsa-block">❌ VSA BLOCK</button>
-                </div>
-            </div>
 
-            <!-- Step 3: Problem description (VSA BLOCK path) -->
-            <div class="audit-step" id="step-problem">
-                <div class="problem-card">
+                    <button onclick="resetAudit()" class="btn-check-another">🔄 Check Another Vehicle</button>
+
+                    <div class="decision-buttons">
+                        <button onclick="vanOK()" class="btn-van-ok">✅ VAN OK</button>
+                        <button onclick="vsaBlock()" class="btn-vsa-block">❌ VSA BLOCK</button>
+                    </div>
+                </div>
+
+                <!-- Problem description (shown inline when VSA BLOCK tapped) -->
+                <div class="problem-card" id="problem-card">
                     <h3>⚠️ Describe the Problem</h3>
                     <textarea id="problem-description" placeholder="Enter the problem details…"></textarea>
                     <button onclick="submitProblem()" class="btn-submit-problem">Continue →</button>
-                    <button onclick="goAuditStep('step-vehicle')" class="btn-back">← Back</button>
                 </div>
+
             </div>
         </div>
     </div>
@@ -1636,11 +1673,6 @@
                 if (e.key === 'Enter') {
                     searchVehicle();
                 }
-            });
-            
-            input.addEventListener('focus', function() {
-                this.value = '';
-                this.placeholder = 'e.g. HB449JJ';
             });
 
             document.addEventListener('click', function(e) {
@@ -2356,7 +2388,6 @@
 
             currentVehicle = vehicle;
             displayVehicleInfo(vehicle);
-            goAuditStep('step-vehicle');
         }
 
         function displayVehicleInfo(vehicle) {
@@ -2388,37 +2419,38 @@
                 value.textContent = 'VSA REQUIRED';
             }
 
+            // Show card, hide problem
+            document.getElementById('vehicle-info-card').classList.add('show');
+            document.getElementById('problem-card').classList.remove('show');
             document.getElementById('autocomplete-list').style.display = 'none';
-        }
-
-        // ── Step navigation ──
-        function goAuditStep(stepId) {
-            document.querySelectorAll('.audit-step').forEach(s => s.classList.remove('active'));
-            document.getElementById(stepId).classList.add('active');
-            if (stepId === 'step-search') {
-                setTimeout(() => document.getElementById('license-plate-input').focus(), 100);
-            }
         }
 
         function resetAudit() {
             document.getElementById('qr-overlay').classList.remove('show');
+            document.getElementById('vehicle-info-card').classList.remove('show');
+            document.getElementById('problem-card').classList.remove('show');
             currentVehicle = null;
             auditResult    = null;
             document.getElementById('license-plate-input').value = '';
             document.getElementById('problem-description').value = '';
-            goAuditStep('step-search');
+            document.getElementById('license-plate-input').focus();
         }
 
         // ── Audit decisions ──
         function vanOK() {
             if (!currentVehicle) return;
             auditResult = { result: 'PASSED', problem: null };
+            document.getElementById('problem-card').classList.remove('show');
             showQROverlay();
         }
 
         function vsaBlock() {
             if (!currentVehicle) return;
-            goAuditStep('step-problem');
+            document.getElementById('problem-card').classList.add('show');
+            // Scroll problem card into view smoothly
+            setTimeout(() => {
+                document.getElementById('problem-card').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 60);
         }
 
         function submitProblem() {
