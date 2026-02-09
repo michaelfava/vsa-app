@@ -1625,7 +1625,6 @@
 
     <script>
         // FIREBASE CONFIGURATION
-        // TO SETUP: Follow FIREBASE_SETUP.md guide
         const firebaseConfig = {
             apiKey: "AIzaSyBpWSHW3fnPUvADjVxKNh5qpJ2lXkJNZRo",
             authDomain: "vsa-app-13a1f.firebaseapp.com",
@@ -1697,7 +1696,6 @@
             try {
                 showLoading('Authenticating...');
                 
-                // Sign in with Firebase Email/Password
                 const userCredential = await auth.signInWithEmailAndPassword(email, password);
                 
                 currentUser = { 
@@ -1707,7 +1705,6 @@
                 
                 document.getElementById('login-error').classList.add('hidden');
                 
-                // Load data from Firebase
                 await loadVehicleDataFromFirebase();
                 
                 hideLoading();
@@ -1850,7 +1847,6 @@
             document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
 
-            // Clear all status messages when changing pages
             clearAllStatusMessages();
 
             if (pageId === 'upload-page') {
@@ -1860,7 +1856,6 @@
             }
         }
 
-        // Toggle collapsible sections
         function toggleSection(sectionId) {
             const content = document.getElementById(sectionId + '-content');
             const icon = document.getElementById(sectionId + '-icon');
@@ -1876,7 +1871,6 @@
             }
         }
 
-        // Initialize collapsible sections from saved state
         function initializeCollapsibleSections() {
             const sections = ['firebase-status', 'upload-files'];
             
@@ -1887,8 +1881,6 @@
                 
                 if (!content || !icon) return;
                 
-                // If there's a saved state, use it
-                // Otherwise use default (upload-files starts collapsed, others expanded)
                 if (savedState === 'collapsed' || (sectionId === 'upload-files' && !savedState)) {
                     content.classList.add('hidden');
                     icon.classList.add('collapsed');
@@ -1899,7 +1891,6 @@
             });
         }
 
-        // Clear all status messages
         function clearAllStatusMessages() {
             const statusElements = [
                 'upload-status',
@@ -1932,10 +1923,8 @@
             let isValid = false;
             let errorMessage = '';
 
-            // Validate based on file type
             switch(fileType) {
                 case 'dive-deep':
-                    // Check if it's a CSV and contains expected keywords
                     const hasDiveDeepKeywords = 
                         fileName.includes('dive') || fileName.includes('deep') || 
                         fileName.includes('expected') || fileName.includes('vehicle');
@@ -1950,7 +1939,6 @@
                     break;
 
                 case 'vin-audit':
-                    // Check if it's XLSX and contains VIN and (audit or detail)
                     const hasVinAuditKeywords = 
                         fileName.includes('vin') && 
                         (fileName.includes('audit') || fileName.includes('detail'));
@@ -1965,7 +1953,6 @@
                     break;
 
                 case 'grounded':
-                    // Check if it's XLSX and contains grounded or (current and veh)
                     const hasGroundedKeywords = 
                         fileName.includes('ground') || 
                         (fileName.includes('current') && fileName.includes('veh'));
@@ -1980,7 +1967,6 @@
                     break;
             }
 
-            // Update UI based on validation
             const nameDisplay = document.getElementById(fileType + '-name');
             
             if (isValid) {
@@ -1989,23 +1975,20 @@
                 nameDisplay.style.color = '#28a745';
             } else {
                 uploadedFiles[fileType] = null;
-                input.value = ''; // Clear the input
+                input.value = '';
                 nameDisplay.innerHTML = errorMessage;
                 nameDisplay.style.color = '#dc3545';
                 
-                // Show alert to user
                 alert(errorMessage + '\n\nFile: ' + file.name + '\n\nPlease select the correct file.');
             }
         }
 
         async function processFiles() {
-            // Check if all files are uploaded
             if (!uploadedFiles['dive-deep'] || !uploadedFiles['vin-audit'] || !uploadedFiles['grounded']) {
                 showStatus('upload-status', '⚠️ Please upload all three files. Each file is validated when selected.', 'error');
                 return;
             }
 
-            // Confirm before clearing all data (new cycle starts)
             const confirmClear = confirm(
                 '⚠️ NEW CYCLE STARTING ⚠️\n\n' +
                 'Uploading new files will:\n' +
@@ -2024,7 +2007,6 @@
             showLoading('Clearing old data...');
 
             try {
-                // Clear all databases first (new cycle)
                 await database.ref('vehicles').remove();
                 await database.ref('audits').remove();
                 
@@ -2036,7 +2018,6 @@
 
                 buildVehicleDatabase(diveDeepData, vinAuditData, groundedData);
 
-                // Save to Firebase
                 const saved = await saveVehicleDataToFirebase();
                 
                 hideLoading();
@@ -2052,7 +2033,6 @@
                     );
                     updateDatabaseStats();
                     
-                    // Clear file inputs after successful upload
                     uploadedFiles = { 'dive-deep': null, 'vin-audit': null, 'grounded': null };
                     document.getElementById('dive-deep-file').value = '';
                     document.getElementById('vin-audit-file').value = '';
@@ -2175,40 +2155,34 @@
         function updateAuditProgress() {
             const week      = getISOWeek(new Date());
             const isOdd     = week % 2 !== 0;
-            const target    = isOdd ? 65 : 95;             // odd week → 65 %, even → 95 %
-            const total     = vehicleDatabase.filter(v => !v.isGrounded).length;   // active (not grounded)
+            const target    = isOdd ? 65 : 95;
+            const total     = vehicleDatabase.filter(v => !v.isGrounded).length;
             const audited   = vehicleDatabase.filter(v => v.lastAudit && !v.isGrounded).length;
             const pct       = total > 0 ? Math.round((audited / total) * 100) : 0;
             const needed    = Math.max(0, Math.ceil(target * total / 100) - audited);
             const targetMet = pct >= target;
 
-            // Week badge
             document.getElementById('progress-week-badge').textContent =
                 `Week ${week} (${isOdd ? 'Odd – 1st check' : 'Even – 2nd check'})`;
 
-            // Target badge
             document.getElementById('progress-target-badge').innerHTML =
                 `Target: <strong>${target}%</strong>`;
 
-            // Fill bar
             const fill = document.getElementById('progress-fill');
             fill.style.width = Math.min(pct, 100) + '%';
             fill.textContent = pct + '%';
             fill.className = 'progress-bar-fill ' + (targetMet ? 'met' : 'not-met');
 
-            // Target marker line position
             const marker = document.getElementById('progress-target-marker');
             marker.style.left = target + '%';
             marker.setAttribute('data-label', 'Target ' + target + '%');
 
-            // Number cards
             document.getElementById('prog-current-pct').textContent = pct + '%';
             document.getElementById('prog-target-pct').textContent  = target + '%';
             document.getElementById('prog-audited').textContent     = audited;
             document.getElementById('prog-total').textContent       = total;
             document.getElementById('prog-needed').textContent      = needed;
 
-            // Highlight the "needed" card: orange if still needed, green if zero
             const neededCard = document.getElementById('prog-needed-card');
             neededCard.className = 'progress-num-card highlight-needed' + (needed === 0 ? ' zero' : '');
         }
@@ -2231,10 +2205,8 @@
             try {
                 showLoading('Clearing vehicle database...');
                 
-                // Clear from Firebase
                 await database.ref('vehicles').remove();
                 
-                // Clear local
                 vehicleDatabase = [];
                 
                 hideLoading();
@@ -2264,13 +2236,11 @@
             try {
                 showLoading('Clearing audit database...');
                 
-                // Clear from Firebase
                 await database.ref('audits').remove();
                 
                 hideLoading();
                 showStatus('clear-status', '✅ Audit database cleared! All users updated.', 'success');
                 
-                // Refresh report stats if on reports page
                 if (document.getElementById('download-page').classList.contains('active')) {
                     updateReportStats();
                 }
@@ -2295,7 +2265,6 @@
 
             if (!confirm) return;
 
-            // Double confirmation for safety
             const doubleConfirm = window.confirm(
                 'FINAL CONFIRMATION\n\n' +
                 'This will permanently delete all data.\n' +
@@ -2315,18 +2284,15 @@
             try {
                 showLoading('Clearing all databases...');
                 
-                // Clear everything from Firebase
                 await database.ref('vehicles').remove();
                 await database.ref('audits').remove();
                 
-                // Clear local
                 vehicleDatabase = [];
                 
                 hideLoading();
                 updateDatabaseStats();
                 showStatus('clear-status', '✅ All databases cleared! System reset complete. All users updated.', 'success');
                 
-                // Refresh report stats if on reports page
                 if (document.getElementById('download-page').classList.contains('active')) {
                     updateReportStats();
                 }
@@ -2395,15 +2361,12 @@
             document.getElementById('info-vin').textContent   = vehicle.vin;
             document.getElementById('info-dsp').textContent   = vehicle.dsp;
 
-            // Grounded warning
             document.getElementById('grounded-warning').style.display = vehicle.isGrounded ? 'block' : 'none';
 
-            // Status badge
             document.getElementById('info-status').innerHTML = vehicle.isGrounded
                 ? '<span class="status-badge badge-grounded">GROUNDED</span>'
                 : '<span class="status-badge badge-active">ACTIVE</span>';
 
-            // Last audit box
             const box   = document.getElementById('last-audit-box');
             const label = box.querySelector('.info-label');
             const value = document.getElementById('info-last-audit');
@@ -2419,7 +2382,6 @@
                 value.textContent = 'VSA REQUIRED';
             }
 
-            // Show card, hide problem
             document.getElementById('vehicle-info-card').classList.add('show');
             document.getElementById('problem-card').classList.remove('show');
             document.getElementById('autocomplete-list').style.display = 'none';
@@ -2447,7 +2409,6 @@
         function vsaBlock() {
             if (!currentVehicle) return;
             document.getElementById('problem-card').classList.add('show');
-            // Scroll problem card into view smoothly
             setTimeout(() => {
                 document.getElementById('problem-card').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }, 60);
@@ -2465,68 +2426,41 @@
 
         // ── QR Overlay ──
         function showQROverlay() {
-        const qrDiv = document.getElementById('qr-code');
-        qrDiv.innerHTML = '';
-    
-        // ── Build rich QR payload ──
-        const now = new Date();
-        const qrData = {
-            // Vehicle info
-            vin:          currentVehicle.vin,
-            plate:        currentVehicle.licensePlate,
-            dsp:          currentVehicle.dsp,
-            status:       currentVehicle.isGrounded ? 'GROUNDED' : 'ACTIVE',
-            grounded:     currentVehicle.isGrounded,
-            lastAudit:    currentVehicle.lastAudit || 'NONE',
-            // Audit result
-            result:       auditResult.result,
-            problem:      auditResult.problem || '',
-            // Metadata
-            auditor:      currentUser ? currentUser.username : 'unknown',
-            date:         now.toLocaleDateString(),
-            time:         now.toLocaleTimeString(),
-            timestamp:    now.toISOString(),
-            station:      'FIX'   // ← change to your station code or make dynamic
-        };
-    
-        // Stringify — compact (no pretty-print) to save bytes
-        const qrText = JSON.stringify(qrData);
-    
-        // Choose error-correction level based on payload size
-        // H = 30% recovery but low capacity · M = 15% recovery but more capacity
-        const correctionLevel = qrText.length > 300
-            ? QRCode.CorrectLevel.M
-            : QRCode.CorrectLevel.H;
-    
-        new QRCode(qrDiv, {
-            text:           qrText,
-            width:          280,       // slightly larger for denser data
-            height:         280,
-            colorDark:      '#000000',
-            colorLight:     '#ffffff',
-            correctLevel:   correctionLevel
-        });
-    
-        // ── Update overlay UI ──
-        const passed = auditResult.result === 'PASSED';
-        const title  = document.getElementById('qr-overlay-title');
-        title.textContent = passed ? '✅ Van OK' : '❌ VSA Blocked';
-        title.className   = 'qr-overlay-title ' + (passed ? 'passed' : 'failed');
-    
-        document.getElementById('qr-overlay-info').innerHTML =
-            `<strong>${currentVehicle.licensePlate}</strong> · ${currentVehicle.dsp}<br>` +
-            `VIN: ${currentVehicle.vin}<br>` +
-            `Status: ${currentVehicle.isGrounded ? '🚫 GROUNDED' : '✅ ACTIVE'}<br>` +
-            `Last Audit: ${currentVehicle.lastAudit || 'None'}<br>` +
-            `Auditor: ${currentUser ? currentUser.username : 'unknown'}<br>` +
-            `Date: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}` +
-            (auditResult.problem
-                ? `<br><span style="color:#dc3545;">Problem: ${auditResult.problem}</span>`
-                : '');
-    
-        document.getElementById('qr-overlay').classList.add('show');
-    }
+            const qrDiv = document.getElementById('qr-code');
+            qrDiv.innerHTML = '';
 
+            // QR code contains ONLY the VIN
+            const qrText = currentVehicle.vin;
+            const now = new Date();
+
+            new QRCode(qrDiv, {
+                text:           qrText,
+                width:          280,
+                height:         280,
+                colorDark:      '#000000',
+                colorLight:     '#ffffff',
+                correctLevel:   QRCode.CorrectLevel.H
+            });
+
+            // ── Update overlay UI ──
+            const passed = auditResult.result === 'PASSED';
+            const title  = document.getElementById('qr-overlay-title');
+            title.textContent = passed ? '✅ Van OK' : '❌ VSA Blocked';
+            title.className   = 'qr-overlay-title ' + (passed ? 'passed' : 'failed');
+
+            document.getElementById('qr-overlay-info').innerHTML =
+                `<strong>${currentVehicle.licensePlate}</strong> · ${currentVehicle.dsp}<br>` +
+                `VIN: ${currentVehicle.vin}<br>` +
+                `Status: ${currentVehicle.isGrounded ? '🚫 GROUNDED' : '✅ ACTIVE'}<br>` +
+                `Last Audit: ${currentVehicle.lastAudit || 'None'}<br>` +
+                `Auditor: ${currentUser ? currentUser.username : 'unknown'}<br>` +
+                `Date: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}` +
+                (auditResult.problem
+                    ? `<br><span style="color:#dc3545;">Problem: ${auditResult.problem}</span>`
+                    : '');
+
+            document.getElementById('qr-overlay').classList.add('show');
+        }
 
         // ── Save ──
         async function saveAudit() {
@@ -2548,7 +2482,6 @@
             const saved = await saveAuditToFirebase(audit);
             if (!saved) alert('⚠️ Cloud save failed — check connection.');
 
-            // Update local vehicle record so stats refresh
             const v = vehicleDatabase.find(x => x.licensePlate === currentVehicle.licensePlate);
             if (v) v.lastAudit = audit.date;
             updateDatabaseStats();
@@ -2647,7 +2580,7 @@
         }
 
         // Utility Functions
-        let statusTimers = {}; // Track timers for each status element
+        let statusTimers = {};
 
         function showStatus(elementId, message, type) {
             const element = document.getElementById(elementId);
@@ -2655,12 +2588,10 @@
             element.innerHTML = message.replace(/\n/g, '<br>');
             element.style.display = 'block';
 
-            // Clear existing timer for this element if any
             if (statusTimers[elementId]) {
                 clearTimeout(statusTimers[elementId]);
             }
 
-            // Auto-hide after 5 seconds (only for success and info messages)
             if (type === 'success' || type === 'info') {
                 statusTimers[elementId] = setTimeout(() => {
                     element.style.transition = 'opacity 0.5s';
@@ -2687,10 +2618,10 @@
         // ============================================================
         // MODAL — shared state
         // ============================================================
-        let currentModalData = [];          // full (unfiltered) dataset
-        let currentModalType = '';           // 'vehicle' | 'audit'
-        let modalSortCol = null;            // currently sorted column key
-        let modalSortDir = 'asc';           // 'asc' | 'desc'
+        let currentModalData = [];
+        let currentModalType = '';
+        let modalSortCol = null;
+        let modalSortDir = 'asc';
 
         function closeModal() {
             document.getElementById('data-modal').classList.remove('show');
@@ -2733,7 +2664,6 @@
             modalSortDir = 'asc';
             document.getElementById('modal-title').textContent = title;
 
-            // Build unique DSP list for filter
             const dspSet = [...new Set(data.map(v => v.dsp))].sort();
 
             const toolbar = `
@@ -2785,7 +2715,6 @@
                 return true;
             });
 
-            // Sort
             if (modalSortCol) {
                 filtered.sort((a, b) => {
                     let valA = getVehicleSortVal(a, modalSortCol);
@@ -2959,7 +2888,6 @@
                 return true;
             });
 
-            // Sort
             if (modalSortCol) {
                 filtered.sort((a, b) => {
                     let valA = getAuditSortVal(a, modalSortCol);
@@ -3052,7 +2980,7 @@
         }
 
         // ============================================================
-        // EXPORT — exports the currently *visible* (filtered) rows
+        // EXPORT
         // ============================================================
         function exportModalData() {
             const rows = document.querySelectorAll('.data-table tbody tr');
