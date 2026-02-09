@@ -2465,36 +2465,68 @@
 
         // ── QR Overlay ──
         function showQROverlay() {
-            const qrDiv = document.getElementById('qr-code');
-            qrDiv.innerHTML = '';
+        const qrDiv = document.getElementById('qr-code');
+        qrDiv.innerHTML = '';
+    
+        // ── Build rich QR payload ──
+        const now = new Date();
+        const qrData = {
+            // Vehicle info
+            vin:          currentVehicle.vin,
+            plate:        currentVehicle.licensePlate,
+            dsp:          currentVehicle.dsp,
+            status:       currentVehicle.isGrounded ? 'GROUNDED' : 'ACTIVE',
+            grounded:     currentVehicle.isGrounded,
+            lastAudit:    currentVehicle.lastAudit || 'NONE',
+            // Audit result
+            result:       auditResult.result,
+            problem:      auditResult.problem || '',
+            // Metadata
+            auditor:      currentUser ? currentUser.username : 'unknown',
+            date:         now.toLocaleDateString(),
+            time:         now.toLocaleTimeString(),
+            timestamp:    now.toISOString(),
+            station:      'FIX'   // ← change to your station code or make dynamic
+        };
+    
+        // Stringify — compact (no pretty-print) to save bytes
+        const qrText = JSON.stringify(qrData);
+    
+        // Choose error-correction level based on payload size
+        // H = 30% recovery but low capacity · M = 15% recovery but more capacity
+        const correctionLevel = qrText.length > 300
+            ? QRCode.CorrectLevel.M
+            : QRCode.CorrectLevel.H;
+    
+        new QRCode(qrDiv, {
+            text:           qrText,
+            width:          280,       // slightly larger for denser data
+            height:         280,
+            colorDark:      '#000000',
+            colorLight:     '#ffffff',
+            correctLevel:   correctionLevel
+        });
+    
+        // ── Update overlay UI ──
+        const passed = auditResult.result === 'PASSED';
+        const title  = document.getElementById('qr-overlay-title');
+        title.textContent = passed ? '✅ Van OK' : '❌ VSA Blocked';
+        title.className   = 'qr-overlay-title ' + (passed ? 'passed' : 'failed');
+    
+        document.getElementById('qr-overlay-info').innerHTML =
+            `<strong>${currentVehicle.licensePlate}</strong> · ${currentVehicle.dsp}<br>` +
+            `VIN: ${currentVehicle.vin}<br>` +
+            `Status: ${currentVehicle.isGrounded ? '🚫 GROUNDED' : '✅ ACTIVE'}<br>` +
+            `Last Audit: ${currentVehicle.lastAudit || 'None'}<br>` +
+            `Auditor: ${currentUser ? currentUser.username : 'unknown'}<br>` +
+            `Date: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}` +
+            (auditResult.problem
+                ? `<br><span style="color:#dc3545;">Problem: ${auditResult.problem}</span>`
+                : '');
+    
+        document.getElementById('qr-overlay').classList.add('show');
+    }
 
-            new QRCode(qrDiv, {
-                text: JSON.stringify({
-                    vin: currentVehicle.vin,
-                    licensePlate: currentVehicle.licensePlate,
-                    dsp: currentVehicle.dsp,
-                    result: auditResult.result,
-                    problem: auditResult.problem,
-                    timestamp: new Date().toISOString()
-                }),
-                width: 240,
-                height: 240,
-                colorDark: '#000000',
-                colorLight: '#ffffff',
-                correctLevel: QRCode.CorrectLevel.H
-            });
-
-            const passed = auditResult.result === 'PASSED';
-            const title  = document.getElementById('qr-overlay-title');
-            title.textContent = passed ? '✅ Van OK' : '❌ VSA Blocked';
-            title.className   = 'qr-overlay-title ' + (passed ? 'passed' : 'failed');
-
-            document.getElementById('qr-overlay-info').innerHTML =
-                `<strong>${currentVehicle.licensePlate}</strong> · ${currentVehicle.dsp}<br>${currentVehicle.vin}` +
-                (auditResult.problem ? `<br><span style="color:#dc3545;">Problem: ${auditResult.problem}</span>` : '');
-
-            document.getElementById('qr-overlay').classList.add('show');
-        }
 
         // ── Save ──
         async function saveAudit() {
