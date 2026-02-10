@@ -279,6 +279,7 @@
                 <div class="stat-card" onclick="viewVehicleData('grounded')"><div class="stat-value" id="grounded-count">0</div><div class="stat-label">Grounded Vehicles</div></div>
                 <div class="stat-card" onclick="viewVehicleData('audited')"><div class="stat-value" id="audited-count">0</div><div class="stat-label">Already Audited</div></div>
                 <div class="stat-card" style="border:2px solid #FF9900;background:rgba(255,153,0,0.08);" onclick="viewVehicleData('to-audit')"><div class="stat-value" id="to-audit-count" style="color:#FF9900;">0</div><div class="stat-label" style="color:#FF9900;font-weight:bold;">🚐 To Be Audited</div></div>
+                <div class="stat-card" style="border:2px solid #17a2b8;background:rgba(23,162,184,0.08);" onclick="viewVehicleData('manual')"><div class="stat-value" id="manual-count" style="color:#17a2b8;">0</div><div class="stat-label" style="color:#17a2b8;font-weight:bold;">➕ Manually Added</div></div>
             </div>
             <div class="progress-section">
                 <h3>📊 Audit Progress</h3>
@@ -380,12 +381,14 @@
                 <div class="stat-card" onclick="viewAuditData('passed')"><div class="stat-value" id="report-passed">0</div><div class="stat-label">Passed (OK)</div></div>
                 <div class="stat-card" onclick="viewAuditData('failed')"><div class="stat-value" id="report-failed">0</div><div class="stat-label">Failed (Blocked)</div></div>
                 <div class="stat-card" onclick="viewAuditData('today')"><div class="stat-value" id="report-today">0</div><div class="stat-label">Today's Audits</div></div>
+                <div class="stat-card" style="border:2px solid #17a2b8;background:rgba(23,162,184,0.08);" onclick="viewVehicleData('manual')"><div class="stat-value" id="report-manual" style="color:#17a2b8;">0</div><div class="stat-label" style="color:#17a2b8;font-weight:bold;">➕ Manually Added</div></div>
             </div>
             <h3 style="margin-top:30px;">📥 Download Reports</h3>
             <div class="download-buttons">
                 <button onclick="downloadAllAudits()" class="btn btn-primary">Download All Audits</button>
                 <button onclick="downloadPassedOnly()" class="btn btn-success">Download Passed Only</button>
                 <button onclick="downloadFailedOnly()" class="btn btn-danger">Download Failed Only</button>
+                <button onclick="downloadManualVehicles()" class="btn btn-info">Download Manually Added</button>
             </div>
             <div id="download-status"></div>
         </div>
@@ -509,6 +512,7 @@ function updateDatabaseStats(){
     document.getElementById('grounded-count').textContent=vehicleDatabase.filter(v=>v.isGrounded).length;
     document.getElementById('audited-count').textContent=vehicleDatabase.filter(v=>v.lastAudit).length;
     document.getElementById('to-audit-count').textContent=vehicleDatabase.filter(v=>!v.lastAudit&&!v.isGrounded).length;
+    document.getElementById('manual-count').textContent=vehicleDatabase.filter(v=>v.vin&&v.vin.startsWith('MANUAL-')).length;
     updateAuditProgress();
 }
 
@@ -628,10 +632,19 @@ async function doSaveAudit(){
 }
 
 // REPORTS
-async function updateReportStats(){try{const s=await database.ref('audits').once('value');const a=[];s.forEach(c=>a.push(c.val()));const t=new Date().toLocaleDateString();document.getElementById('report-total-audits').textContent=a.length;document.getElementById('report-passed').textContent=a.filter(x=>x.result==='PASSED').length;document.getElementById('report-failed').textContent=a.filter(x=>x.result==='FAILED').length;document.getElementById('report-today').textContent=a.filter(x=>x.date===t).length;}catch(e){console.error(e);}}
+async function updateReportStats(){try{const s=await database.ref('audits').once('value');const a=[];s.forEach(c=>a.push(c.val()));const t=new Date().toLocaleDateString();document.getElementById('report-total-audits').textContent=a.length;document.getElementById('report-passed').textContent=a.filter(x=>x.result==='PASSED').length;document.getElementById('report-failed').textContent=a.filter(x=>x.result==='FAILED').length;document.getElementById('report-today').textContent=a.filter(x=>x.date===t).length;document.getElementById('report-manual').textContent=vehicleDatabase.filter(v=>v.vin&&v.vin.startsWith('MANUAL-')).length;}catch(e){console.error(e);}}
 async function downloadAllAudits(){await downloadAudits('all');}
 async function downloadPassedOnly(){await downloadAudits('passed');}
 async function downloadFailedOnly(){await downloadAudits('failed');}
+function downloadManualVehicles(){
+    const manual=vehicleDatabase.filter(v=>v.vin&&v.vin.startsWith('MANUAL-'));
+    if(!manual.length){alert('No manually added vehicles');return;}
+    const h=['License Plate','DSP','Status','Date Added'];
+    const rows=manual.map(v=>{const ts=v.vin.split('-').pop();const d=ts?new Date(parseInt(ts)).toLocaleDateString():'';return[v.licensePlate,v.dsp,v.isGrounded?'GROUNDED':'ACTIVE',d];});
+    const csv=[h,...rows].map(r=>r.map(c=>'"'+c+'"').join(',')).join('\n');
+    const blob=new Blob([csv],{type:'text/csv'}),url=URL.createObjectURL(blob),el=document.createElement('a');el.href=url;el.download='manually_added_vehicles_'+new Date().toISOString().split('T')[0]+'.csv';el.click();
+    showStatus('download-status','Downloaded '+manual.length+' manually added vehicles','success');
+}
 async function downloadAudits(type){
     try{showLoading('Loading...');const s=await database.ref('audits').once('value');let a=[];s.forEach(c=>a.push(c.val()));
     if(type==='passed')a=a.filter(x=>x.result==='PASSED');else if(type==='failed')a=a.filter(x=>x.result==='FAILED');
@@ -654,7 +667,7 @@ function closeModal(){document.getElementById('data-modal').classList.remove('sh
 
 function viewVehicleData(type){
     let data=[],title='';
-    switch(type){case'active':data=vehicleDatabase.slice();title='All Active Vehicles';break;case'grounded':data=vehicleDatabase.filter(v=>v.isGrounded);title='Grounded Vehicles';break;case'audited':data=vehicleDatabase.filter(v=>v.lastAudit);title='Already Audited';break;case'to-audit':data=vehicleDatabase.filter(v=>!v.lastAudit&&!v.isGrounded);title='🚐 To Be Audited';break;}
+    switch(type){case'active':data=vehicleDatabase.slice();title='All Active Vehicles';break;case'grounded':data=vehicleDatabase.filter(v=>v.isGrounded);title='Grounded Vehicles';break;case'audited':data=vehicleDatabase.filter(v=>v.lastAudit);title='Already Audited';break;case'to-audit':data=vehicleDatabase.filter(v=>!v.lastAudit&&!v.isGrounded);title='🚐 To Be Audited';break;case'manual':data=vehicleDatabase.filter(v=>v.vin&&v.vin.startsWith('MANUAL-'));title='➕ Manually Added Vehicles';break;}
     if(!data.length){showModalEmpty(title,'No vehicles found.');return;}
     currentModalData=data;currentModalType='vehicle';modalSortCol=null;modalSortDir='asc';
     document.getElementById('modal-title').textContent=title;
