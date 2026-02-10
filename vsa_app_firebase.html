@@ -329,7 +329,7 @@
             <div class="add-vehicle-card" id="add-vehicle-card">
                 <h3>➕ Vehicle not found — Add to database</h3>
                 <div class="add-field"><label>License Plate</label><input type="text" id="add-plate" readonly style="opacity:0.7;"></div>
-                <div class="add-field"><label>DSP (Delivery Service Partner)</label><input type="text" id="add-dsp" placeholder="e.g. AMZL, DHL…"></div>
+                <div class="add-field"><label>DSP (Delivery Service Partner)</label><input type="text" id="add-dsp" placeholder=""></div>
                 <div class="add-btns">
                     <button class="btn-add-save" onclick="saveNewVehicle()">💾 Add Vehicle</button>
                     <button class="btn-add-cancel" onclick="cancelAddVehicle()">Cancel</button>
@@ -560,8 +560,8 @@ function searchVehicle(){
 // ADD NEW VEHICLE
 async function saveNewVehicle(){
     const plate=document.getElementById('add-plate').value.toUpperCase().trim(),dsp=document.getElementById('add-dsp').value.trim();
-    if(!plate){alert('No plate');return;}if(!dsp){alert('Please enter the DSP');return;}
-    const nv={vin:'MANUAL-'+plate+'-'+Date.now(),licensePlate:plate,dsp:dsp,status:'Active',isGrounded:false,lastAudit:null};
+    if(!plate){alert('No plate');return;}
+    const nv={vin:'MANUAL-'+plate+'-'+Date.now(),licensePlate:plate,dsp:dsp||'N/A',status:'Active',isGrounded:false,lastAudit:null};
     vehicleDatabase.push(nv);showLoading('Adding...');const saved=await saveVehicleDataToFirebase();hideLoading();
     if(saved){document.getElementById('add-vehicle-card').classList.remove('show');updateDatabaseStats();currentVehicle=nv;auditResult=null;showQROverlay();}
     else{vehicleDatabase.pop();alert('⚠️ Cloud save failed');}
