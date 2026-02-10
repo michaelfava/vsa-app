@@ -639,8 +639,8 @@ async function downloadFailedOnly(){await downloadAudits('failed');}
 function downloadManualVehicles(){
     const manual=vehicleDatabase.filter(v=>v.vin&&v.vin.startsWith('MANUAL-'));
     if(!manual.length){alert('No manually added vehicles');return;}
-    const h=['License Plate','DSP','Status','Date Added'];
-    const rows=manual.map(v=>{const ts=v.vin.split('-').pop();const d=ts?new Date(parseInt(ts)).toLocaleDateString():'';return[v.licensePlate,v.dsp,v.isGrounded?'GROUNDED':'ACTIVE',d];});
+    const h=['License Plate','DSP'];
+    const rows=manual.map(v=>[v.licensePlate,v.dsp||'N/A']);
     const csv=[h,...rows].map(r=>r.map(c=>'"'+c+'"').join(',')).join('\n');
     const blob=new Blob([csv],{type:'text/csv'}),url=URL.createObjectURL(blob),el=document.createElement('a');el.href=url;el.download='manually_added_vehicles_'+new Date().toISOString().split('T')[0]+'.csv';el.click();
     showStatus('download-status','Downloaded '+manual.length+' manually added vehicles','success');
@@ -667,7 +667,12 @@ function closeModal(){document.getElementById('data-modal').classList.remove('sh
 
 function viewVehicleData(type){
     let data=[],title='';
-    switch(type){case'active':data=vehicleDatabase.slice();title='All Active Vehicles';break;case'grounded':data=vehicleDatabase.filter(v=>v.isGrounded);title='Grounded Vehicles';break;case'audited':data=vehicleDatabase.filter(v=>v.lastAudit);title='Already Audited';break;case'to-audit':data=vehicleDatabase.filter(v=>!v.lastAudit&&!v.isGrounded);title='🚐 To Be Audited';break;case'manual':data=vehicleDatabase.filter(v=>v.vin&&v.vin.startsWith('MANUAL-'));title='➕ Manually Added Vehicles';break;}
+    switch(type){case'active':data=vehicleDatabase.slice();title='All Active Vehicles';break;case'grounded':data=vehicleDatabase.filter(v=>v.isGrounded);title='Grounded Vehicles';break;case'audited':data=vehicleDatabase.filter(v=>v.lastAudit);title='Already Audited';break;case'to-audit':data=vehicleDatabase.filter(v=>!v.lastAudit&&!v.isGrounded);title='🚐 To Be Audited';break;case'manual':data=vehicleDatabase.filter(v=>v.vin&&v.vin.startsWith('MANUAL-'));title='➕ Manually Added Vehicles';
+        if(!data.length){showModalEmpty(title,'No manually added vehicles.');return;}
+        currentModalData=data;currentModalType='manual';modalSortCol=null;modalSortDir='asc';
+        document.getElementById('modal-title').textContent=title;
+        document.getElementById('modal-body').innerHTML='<div class="modal-toolbar"><input class="search-input" type="text" id="m-search" placeholder="🔍 Search…" oninput="renderManualTable()"><span class="modal-count" id="m-count">'+data.length+' vehicles</span></div><div id="m-table"></div>';
+        renderManualTable();document.getElementById('data-modal').classList.add('show');return;}
     if(!data.length){showModalEmpty(title,'No vehicles found.');return;}
     currentModalData=data;currentModalType='vehicle';modalSortCol=null;modalSortDir='asc';
     document.getElementById('modal-title').textContent=title;
@@ -711,12 +716,24 @@ function renderAuditTable(){
 }
 function getASV(a,c){switch(c){case'date':return a.date||'';case'time':return a.time||'';case'licensePlate':return a.licensePlate.toLowerCase();case'vin':return a.vin.toLowerCase();case'dsp':return a.dsp.toLowerCase();case'result':return a.result||'';case'problem':return(a.problem||'').toLowerCase();case'user':return(a.user||'').toLowerCase();default:return'';}}
 function sortA(c){if(modalSortCol===c)modalSortDir=modalSortDir==='asc'?'desc':'asc';else{modalSortCol=c;modalSortDir='asc';}renderAuditTable();}
+function renderManualTable(){
+    const search=document.getElementById('m-search').value.toLowerCase();
+    let f=currentModalData.filter(v=>{if(search&&!v.licensePlate.toLowerCase().includes(search)&&!(v.dsp||'').toLowerCase().includes(search))return false;return true;});
+    if(modalSortCol)f.sort((a,b)=>{let va=modalSortCol==='licensePlate'?a.licensePlate.toLowerCase():(a.dsp||'').toLowerCase(),vb=modalSortCol==='licensePlate'?b.licensePlate.toLowerCase():(b.dsp||'').toLowerCase();return va<vb?(modalSortDir==='asc'?-1:1):va>vb?(modalSortDir==='asc'?1:-1):0;});
+    document.getElementById('m-count').textContent=f.length+' vehicles';
+    const cols=[{k:'licensePlate',l:'License Plate'},{k:'dsp',l:'DSP'}];
+    const th=cols.map(c=>{let a='',cl='';if(modalSortCol===c.k){a=modalSortDir==='asc'?'▲':'▼';cl=' class="active-sort"';}return'<th'+cl+' onclick="modalSortCol=modalSortCol===\''+c.k+'\'?(modalSortDir=modalSortDir===\'asc\'?\'desc\':\'asc\',\''+c.k+'\'):(modalSortDir=\'asc\',\''+c.k+'\');renderManualTable()">'+c.l+'<span class="sort-arrow">'+(a||'⇅')+'</span></th>';}).join('');
+    const tb=f.map(v=>'<tr><td><strong>'+v.licensePlate+'</strong></td><td>'+(v.dsp||'N/A')+'</td></tr>').join('');
+    document.getElementById('m-table').innerHTML='<table class="data-table"><thead><tr>'+th+'</tr></thead><tbody>'+(tb||'<tr><td colspan="2" style="text-align:center;color:#aaa;padding:30px;">No matches</td></tr>')+'</tbody></table>';
+}
+function sortManual(c){if(modalSortCol===c)modalSortDir=modalSortDir==='asc'?'desc':'asc';else{modalSortCol=c;modalSortDir='asc';}renderManualTable();}
 function showModalEmpty(title,msg){document.getElementById('modal-title').textContent=title;document.getElementById('modal-body').innerHTML='<div class="empty-data"><p>'+msg+'</p></div>';document.getElementById('data-modal').classList.add('show');}
 
 function exportModalData(){
     const rows=document.querySelectorAll('.data-table tbody tr');if(!rows.length){alert('No data.');return;}
     const mTitle=document.getElementById('modal-title').textContent,date=new Date().toISOString().split('T')[0];let csv='',fn='';
-    if(currentModalType==='vehicle'){fn='vehicles_'+mTitle.toLowerCase().replace(/[^a-z0-9]/g,'_')+'_'+date+'.csv';const h=['Plate','VIN','DSP','Status','Last Audit'],search=document.getElementById('v-search').value.toLowerCase(),dsps=getSelectedPills('v-dsp'),statuses=getSelectedPills('v-status');let f=currentModalData.filter(v=>{if(search&&!v.licensePlate.toLowerCase().includes(search)&&!v.vin.toLowerCase().includes(search))return false;if(dsps.length&&!dsps.includes(v.dsp))return false;if(statuses.length&&!statuses.some(s=>s==='active'?!v.isGrounded:s==='grounded'?v.isGrounded:s==='audited'?!!v.lastAudit:!v.lastAudit))return false;return true;});csv=[h,...f.map(v=>[v.licensePlate,v.vin,v.dsp,v.isGrounded?'GROUNDED':'ACTIVE',v.lastAudit||''])].map(r=>r.map(c=>'"'+c+'"').join(',')).join('\n');}
+    if(currentModalType==='manual'){fn='manually_added_'+date+'.csv';const h=['License Plate','DSP'];const search=document.getElementById('m-search')?document.getElementById('m-search').value.toLowerCase():'';let f=currentModalData.filter(v=>{if(search&&!v.licensePlate.toLowerCase().includes(search)&&!(v.dsp||'').toLowerCase().includes(search))return false;return true;});csv=[h,...f.map(v=>[v.licensePlate,v.dsp||'N/A'])].map(r=>r.map(c=>'"'+c+'"').join(',')).join('\n');}
+    else if(currentModalType==='vehicle'){fn='vehicles_'+mTitle.toLowerCase().replace(/[^a-z0-9]/g,'_')+'_'+date+'.csv';const h=['Plate','VIN','DSP','Status','Last Audit'],search=document.getElementById('v-search').value.toLowerCase(),dsps=getSelectedPills('v-dsp'),statuses=getSelectedPills('v-status');let f=currentModalData.filter(v=>{if(search&&!v.licensePlate.toLowerCase().includes(search)&&!v.vin.toLowerCase().includes(search))return false;if(dsps.length&&!dsps.includes(v.dsp))return false;if(statuses.length&&!statuses.some(s=>s==='active'?!v.isGrounded:s==='grounded'?v.isGrounded:s==='audited'?!!v.lastAudit:!v.lastAudit))return false;return true;});csv=[h,...f.map(v=>[v.licensePlate,v.vin,v.dsp,v.isGrounded?'GROUNDED':'ACTIVE',v.lastAudit||''])].map(r=>r.map(c=>'"'+c+'"').join(',')).join('\n');}
     else{fn='audits_'+mTitle.toLowerCase().replace(/[^a-z0-9]/g,'_')+'_'+date+'.csv';const h=['Date','Time','Plate','VIN','DSP','Result','Problem','User'],search=document.getElementById('a-search').value.toLowerCase(),results=getSelectedPills('a-result'),dsps=getSelectedPills('a-dsp'),users=getSelectedPills('a-user');let f=currentModalData.filter(a=>{if(search&&!a.licensePlate.toLowerCase().includes(search)&&!a.vin.toLowerCase().includes(search))return false;if(results.length&&!results.includes(a.result))return false;if(dsps.length&&!dsps.includes(a.dsp))return false;if(users.length&&!users.includes(a.user||'Unknown'))return false;return true;});csv=[h,...f.map(a=>[a.date,a.time,a.licensePlate,a.vin,a.dsp,a.result,a.problem||'',a.user||''])].map(r=>r.map(c=>'"'+c+'"').join(',')).join('\n');}
     const blob=new Blob([csv],{type:'text/csv'}),url=URL.createObjectURL(blob),el=document.createElement('a');el.href=url;el.download=fn;el.click();
 }
