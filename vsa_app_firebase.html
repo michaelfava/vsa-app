@@ -97,7 +97,11 @@
         .qr-grounded-banner.show{display:block}
         .qr-grounded-banner span{font-size:18px;font-weight:bold;color:#dc3545}
 
-        .qr-code-wrap{background:#fff;border-radius:16px;padding:20px;display:inline-block}
+        .qr-code-wrap{background:#fff;border-radius:16px;padding:20px;display:inline-block;transition:all 0.3s}
+        .qr-code-wrap.shrunk{display:none}
+        .qr-audit-status{width:100%;max-width:360px;border-radius:12px;padding:10px 16px;text-align:center;font-size:15px;font-weight:bold}
+        .qr-audit-status.todo{background:rgba(255,153,0,0.15);border:2px solid #FF9900;color:#FF9900}
+        .qr-audit-status.done{background:rgba(40,167,69,0.15);border:2px solid #28a745;color:#28a745}
         #qr-code{display:inline-block}
         .qr-vehicle-info{color:#aaa;font-size:14px;text-align:center;line-height:1.6}
         .qr-vehicle-info strong{color:#fff}
@@ -316,7 +320,7 @@
         </div>
         <div class="audit-search-bar">
             <div class="autocomplete-wrapper">
-                <input type="text" id="license-plate-input" placeholder="e.g. HB449JJ" autocomplete="off" inputmode="numeric">
+                <input type="text" id="license-plate-input" placeholder="e.g. HB449JJ" autocomplete="off" inputmode="text">
                 <div id="autocomplete-list"></div>
             </div>
             <button onclick="searchVehicle()" class="btn-check">🔍</button>
@@ -343,7 +347,8 @@
         </div>
         <div class="qr-overlay-body">
             <div class="qr-grounded-banner" id="qr-grounded-banner"><span>🚫 VEHICLE GROUNDED 🚫<br>THIS VAN CANNOT GO OUT</span></div>
-            <div class="qr-code-wrap"><div id="qr-code"></div></div>
+            <div class="qr-audit-status" id="qr-audit-status"></div>
+            <div class="qr-code-wrap" id="qr-code-wrap"><div id="qr-code"></div></div>
             <div class="qr-vehicle-info" id="qr-vehicle-info"></div>
             <div class="qr-decision-area" id="qr-decision-area"><div class="qr-decision-row">
                 <button onclick="vanOK()" class="btn-van-ok">✅ VAN OK</button>
@@ -566,13 +571,19 @@ function cancelAddVehicle(){document.getElementById('add-vehicle-card').classLis
 // QR OVERLAY
 function showQROverlay(){
     const qr=document.getElementById('qr-code');qr.innerHTML='';
-    new QRCode(qr,{text:currentVehicle.vin,width:260,height:260,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});
+    new QRCode(qr,{text:currentVehicle.vin,width:220,height:220,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});
     document.getElementById('qr-plate-title').textContent=currentVehicle.licensePlate;
     document.getElementById('qr-grounded-banner').classList.toggle('show',currentVehicle.isGrounded);
+    // Audit status badge
+    const statusEl=document.getElementById('qr-audit-status');
+    if(currentVehicle.lastAudit){statusEl.className='qr-audit-status done';statusEl.textContent='✅ ALREADY AUDITED — '+currentVehicle.lastAudit;}
+    else{statusEl.className='qr-audit-status todo';statusEl.textContent='🔍 TO BE AUDITED';}
+    // Vehicle info
     document.getElementById('qr-vehicle-info').innerHTML=
-        '<strong>'+currentVehicle.dsp+'</strong> · '+(currentVehicle.isGrounded?'🚫 GROUNDED':'✅ ACTIVE')+'<br>'+
-        '<span class="qr-vin">'+currentVehicle.vin+'</span><br>'+
-        'Last Audit: '+(currentVehicle.lastAudit||'None');
+        '<strong>DSP:</strong> '+currentVehicle.dsp+' · <strong>Status:</strong> '+(currentVehicle.isGrounded?'🚫 GROUNDED':'✅ ACTIVE')+'<br>'+
+        '<strong>VIN:</strong> <span class="qr-vin">'+currentVehicle.vin+'</span>';
+    // Reset UI state
+    document.getElementById('qr-code-wrap').classList.remove('shrunk');
     document.getElementById('qr-decision-area').style.display='';
     document.getElementById('qr-problem-area').classList.remove('show');
     document.getElementById('qr-saved-msg').classList.remove('show');
@@ -596,6 +607,7 @@ async function vanOK(){
 function vsaBlock(){
     if(!currentVehicle)return;
     document.getElementById('qr-decision-area').style.display='none';
+    document.getElementById('qr-code-wrap').classList.add('shrunk');
     document.getElementById('qr-problem-area').classList.add('show');
     setTimeout(()=>document.getElementById('problem-description').focus(),100);
 }
