@@ -6,3055 +6,699 @@
     <title>Amazon VSA Audit System</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Amazon Ember', Arial, sans-serif;
-            background: linear-gradient(135deg, #232F3E 0%, #131A22 100%);
-            color: #fff;
-            min-height: 100vh;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .page {
-            display: none;
-        }
-
-        .page.active {
-            display: block;
-        }
-
-        /* Login Page */
-        .login-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-
-        .login-box {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 40px;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        }
-
-        .logo {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .logo h1 {
-            color: #FF9900;
-            font-size: 32px;
-            margin-bottom: 10px;
-        }
-
-        .logo p {
-            color: #ccc;
-            font-size: 14px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #ddd;
-            font-size: 14px;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            color: #fff;
-            font-size: 16px;
-            transition: all 0.3s;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: #FF9900;
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        .btn {
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-transform: uppercase;
-        }
-
-        .btn-primary {
-            background: #FF9900;
-            color: #131A22;
-        }
-
-        .btn-primary:hover {
-            background: #FFB84D;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(255, 153, 0, 0.4);
-        }
-
-        .btn-success {
-            background: #28a745;
-            color: white;
-        }
-
-        .btn-success:hover {
-            background: #218838;
-        }
-
-        .btn-danger {
-            background: #dc3545;
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #c82333;
-        }
-
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background: #5a6268;
-        }
-
-        .btn-info {
-            background: #17a2b8;
-            color: white;
-        }
-
-        .btn-info:hover {
-            background: #138496;
-        }
-
-        /* Header */
-        .header {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-
-        .header h2 {
-            color: #FF9900;
-            font-size: 24px;
-        }
-
-        .header-actions {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .header-actions button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s;
-        }
-
-        /* Upload Page */
-        .upload-section {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 20px;
-        }
-
-        .upload-section h3 {
-            color: #FF9900;
-            margin-bottom: 20px;
-            font-size: 20px;
-        }
-
-        .file-input-wrapper {
-            position: relative;
-            margin-bottom: 15px;
-        }
-
-        .file-input-wrapper input[type="file"] {
-            display: none;
-        }
-
-        .file-input-label {
-            display: block;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px dashed rgba(255, 255, 255, 0.3);
-            border-radius: 8px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .file-input-label:hover {
-            border-color: #FF9900;
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .file-name {
-            color: #28a745;
-            margin-top: 5px;
-            font-size: 14px;
-        }
-
-        .status-message {
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
-            font-size: 14px;
-        }
-
-        .status-success {
-            background: rgba(40, 167, 69, 0.2);
-            border: 1px solid #28a745;
-            color: #28a745;
-        }
-
-        .status-error {
-            background: rgba(220, 53, 69, 0.2);
-            border: 1px solid #dc3545;
-            color: #dc3545;
-        }
-
-        .status-info {
-            background: rgba(255, 153, 0, 0.2);
-            border: 1px solid #FF9900;
-            color: #FF9900;
-        }
-
-        /* Search Section */
-        .search-section {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        .autocomplete-wrapper {
-            position: relative;
-            z-index: 10000;
-        }
-
-        #license-plate-input {
-            width: 100%;
-            padding: 15px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            color: #fff;
-            font-size: 18px;
-            text-transform: uppercase;
-        }
-
-        #license-plate-input:focus {
-            outline: none;
-            border-color: #FF9900;
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        #autocomplete-list {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: #232F3E;
-            border: 2px solid #FF9900;
-            border-top: none;
-            border-radius: 0 0 8px 8px;
-            max-height: 400px;
-            overflow-y: auto;
-            z-index: 10000;
-            display: none;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-        }
-
-        .autocomplete-item {
-            padding: 12px 15px;
-            cursor: pointer;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            transition: background 0.2s;
-        }
-
-        .autocomplete-item:hover {
-            background: rgba(255, 153, 0, 0.2);
-        }
-
-        .autocomplete-item strong {
-            color: #FF9900;
-        }
-
-        /* ── Audit page: single scrollable page ── */
-        #audit-page .container {
-            padding: 0;
-        }
-
-        #audit-page .header {
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            padding: 12px 16px;
-            border-radius: 0 0 14px 14px;
-            margin-bottom: 0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-            flex-wrap: nowrap;
-        }
-
-        #audit-page .header h2 {
-            font-size: 18px;
-            margin: 0;
-            color: #FF9900;
-            white-space: nowrap;
-        }
-
-        #audit-page .header-actions {
-            display: flex;
-            gap: 6px;
-            flex-wrap: nowrap;
-        }
-
-        #audit-page .header-actions button {
-            padding: 6px 10px;
-            font-size: 12px;
-        }
-
-        /* Search bar: attached directly under header */
-        .audit-search-bar {
-            background: rgba(255,255,255,0.08);
-            padding: 12px 14px;
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .audit-search-bar .autocomplete-wrapper {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .audit-search-bar #license-plate-input {
-            width: 100%;
-            padding: 12px 14px;
-            border: 2px solid rgba(255,255,255,0.2);
-            background: rgba(255,255,255,0.1);
-            border-radius: 10px;
-            color: #fff;
-            font-size: 17px;
-            text-transform: uppercase;
-            box-sizing: border-box;
-        }
-
-        .audit-search-bar #license-plate-input:focus {
-            outline: none;
-            border-color: #FF9900;
-        }
-
-        .audit-search-bar .btn-check {
-            flex-shrink: 0;
-            padding: 12px 16px;
-            background: #FF9900;
-            color: #fff;
-            border: none;
-            border-radius: 10px;
-            font-size: 15px;
-            font-weight: bold;
-            cursor: pointer;
-            white-space: nowrap;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        /* Body area below search bar */
-        .audit-body {
-            padding: 12px 14px 24px;
-        }
-
-        /* Vehicle info card */
-        .vehicle-info-card {
-            background: rgba(255,255,255,0.07);
-            border-radius: 14px;
-            padding: 16px;
-            display: none;
-        }
-
-        .vehicle-info-card.show {
-            display: block;
-        }
-
-        .vehicle-info-card .grounded-warning {
-            background: rgba(220,53,69,0.2);
-            border: 3px solid #dc3545;
-            border-radius: 12px;
-            padding: 14px;
-            animation: pulseGroundedWarning 1.5s ease-in-out infinite;
-            text-align: center;
-            margin-bottom: 12px;
-        }
-
-        .vehicle-info-card .grounded-warning-text {
-            font-size: 20px;
-            font-weight: bold;
-            color: #dc3545;
-        }
-
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 9px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-        }
-
-        .info-row:last-of-type {
-            border-bottom: none;
-        }
-
-        .info-label {
-            color: #aaa;
-            font-weight: bold;
-            font-size: 14px;
-        }
-
-        .info-value {
-            color: #fff;
-            font-size: 15px;
-            font-weight: 600;
-        }
-
-        /* Last audit highlight box */
-        .last-audit-box {
-            border-radius: 10px;
-            padding: 11px 14px;
-            margin-top: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .last-audit-box.needs-vsa {
-            background: rgba(255,193,7,0.15);
-            border: 2px solid #ffc107;
-            animation: pulseGlow 2s ease-in-out infinite;
-        }
-
-        .last-audit-box.already-audited {
-            background: rgba(40,167,69,0.1);
-            border: 2px solid #28a745;
-        }
-
-        .last-audit-box .info-label { font-size: 15px; }
-        .last-audit-box .info-value { font-size: 18px; font-weight: bold; }
-        .last-audit-box.needs-vsa .info-label,
-        .last-audit-box.needs-vsa .info-value { color: #ffc107; }
-        .last-audit-box.already-audited .info-label,
-        .last-audit-box.already-audited .info-value { color: #28a745; }
-
-        /* "Check another" link-button */
-        .btn-check-another {
-            display: block;
-            width: 100%;
-            margin-top: 12px;
-            padding: 9px;
-            background: transparent;
-            color: #aaa;
-            border: 1px solid rgba(255,255,255,0.12);
-            border-radius: 8px;
-            font-size: 14px;
-            cursor: pointer;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .btn-check-another:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
-
-        /* Decision buttons: immediately after info, no blank push */
-        .decision-buttons {
-            display: flex;
-            gap: 12px;
-            margin-top: 14px;
-        }
-
-        .decision-buttons button {
-            flex: 1;
-            padding: 16px 10px;
-            font-size: 17px;
-            font-weight: bold;
-            border: none;
-            border-radius: 14px;
-            cursor: pointer;
-            text-transform: uppercase;
-            color: #fff;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .btn-van-ok {
-            background: linear-gradient(135deg, #28a745, #20c997);
-            box-shadow: 0 4px 15px rgba(40,167,69,0.4);
-        }
-
-        .btn-vsa-block {
-            background: linear-gradient(135deg, #dc3545, #c82333);
-            box-shadow: 0 4px 15px rgba(220,53,69,0.4);
-        }
-
-        /* Problem card (inline, below decision buttons) */
-        .problem-card {
-            background: rgba(220,53,69,0.1);
-            border: 2px solid #dc3545;
-            border-radius: 14px;
-            padding: 16px;
-            margin-top: 14px;
-            display: none;
-        }
-
-        .problem-card.show {
-            display: block;
-        }
-
-        .problem-card h3 {
-            margin: 0 0 10px;
-            color: #dc3545;
-            font-size: 16px;
-        }
-
-        #problem-description {
-            width: 100%;
-            min-height: 90px;
-            padding: 12px;
-            border: 2px solid rgba(255,255,255,0.2);
-            background: rgba(255,255,255,0.1);
-            border-radius: 8px;
-            color: #fff;
-            font-size: 16px;
-            resize: vertical;
-            outline: none;
-            box-sizing: border-box;
-        }
-
-        #problem-description:focus {
-            border-color: #dc3545;
-        }
-
-        .problem-card .btn-submit-problem {
-            margin-top: 10px;
-            width: 100%;
-            padding: 14px;
-            background: #dc3545;
-            color: #fff;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        /* QR overlay — full screen, on top of everything */
-        .qr-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 5000;
-            background: #fff;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-            gap: 12px;
-        }
-
-        .qr-overlay.show {
-            display: flex;
-        }
-
-        .qr-overlay-title {
-            font-size: 22px;
-            font-weight: bold;
-            color: #131A22;
-            text-align: center;
-        }
-
-        .qr-overlay-title.passed { color: #28a745; }
-        .qr-overlay-title.failed { color: #dc3545; }
-
-        #qr-code {
-            display: inline-block;
-        }
-
-        .qr-overlay-info {
-            color: #444;
-            font-size: 14px;
-            text-align: center;
-            line-height: 1.5;
-        }
-
-        .qr-overlay-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            width: 100%;
-            max-width: 280px;
-            margin-top: 8px;
-        }
-
-        .qr-overlay-buttons .btn-save {
-            padding: 16px;
-            background: #28a745;
-            color: #fff;
-            border: none;
-            border-radius: 12px;
-            font-size: 17px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .qr-overlay-buttons .btn-next {
-            padding: 12px;
-            background: transparent;
-            color: #666;
-            border: 1px solid #ccc;
-            border-radius: 10px;
-            font-size: 15px;
-            cursor: pointer;
-        }
-
-        @keyframes pulseGlow {
-            0%, 100% { box-shadow: 0 0 10px rgba(255,193,7,0.5); }
-            50%      { box-shadow: 0 0 20px rgba(255,193,7,0.8); }
-        }
-
-        @keyframes pulseGroundedWarning {
-            0%, 100% { box-shadow: 0 0 15px rgba(220,53,69,0.6); }
-            50%      { box-shadow: 0 0 30px rgba(220,53,69,1); }
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-            color: #fff;
-        }
-
-        .badge-active  { background: #28a745; }
-        .badge-grounded { background: #dc3545; }
-
-        /* Download Page */
-        .download-section {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 30px;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .stat-card {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-        }
-
-        .stat-value {
-            font-size: 36px;
-            font-weight: bold;
-            color: #FF9900;
-            margin-bottom: 5px;
-        }
-
-        .stat-label {
-            color: #aaa;
-            font-size: 14px;
-        }
-
-        .download-buttons {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            margin-top: 20px;
-        }
-
-        .download-buttons button {
-            flex: 1;
-            min-width: 200px;
-        }
-
-        /* Loading Overlay */
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-
-        .loading-overlay.show {
-            display: flex;
-        }
-
-        .spinner {
-            border: 4px solid rgba(255, 255, 255, 0.1);
-            border-top: 4px solid #FF9900;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .loading-text {
-            position: absolute;
-            margin-top: 100px;
-            color: #FF9900;
-            font-size: 16px;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .container {
-                padding: 10px;
-            }
-
-            .header {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .header-actions {
-                flex-direction: column;
-            }
-
-            .header-actions button {
-                width: 100%;
-            }
-
-            /* Audit page header stays horizontal on mobile */
-            #audit-page .header {
-                flex-direction: row;
-                align-items: center;
-            }
-
-            #audit-page .header-actions {
-                flex-direction: row;
-            }
-
-            #audit-page .header-actions button {
-                width: auto;
-            }
-
-            #audit-page .container {
-                padding: 0;
-            }
-
-            .download-buttons {
-                flex-direction: column;
-            }
-
-            .download-buttons button {
-                width: 100%;
-            }
-
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        .firebase-status {
-            background: rgba(66, 133, 244, 0.1);
-            border: 1px solid #4285f4;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-
-        .firebase-status.connected {
-            background: rgba(40, 167, 69, 0.1);
-            border-color: #28a745;
-        }
-
-        .firebase-status.error {
-            background: rgba(220, 53, 69, 0.1);
-            border-color: #dc3545;
-        }
-
-        /* Collapsible sections */
-        .collapsible-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            user-select: none;
-            padding: 5px 0;
-            margin-bottom: 15px;
-        }
-
-        .collapsible-header:hover {
-            opacity: 0.8;
-        }
-
-        .collapse-icon {
-            font-size: 20px;
-            transition: transform 0.3s;
-        }
-
-        .collapse-icon.collapsed {
-            transform: rotate(-90deg);
-        }
-
-        .collapsible-content {
-            max-height: 2000px;
-            overflow: hidden;
-            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
-            opacity: 1;
-        }
-
-        .collapsible-content.hidden {
-            max-height: 0;
-            opacity: 0;
-        }
-
-        /* Data View Modal */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 10000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            overflow: auto;
-        }
-
-        .modal.show {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-
-        .modal-content {
-            background: #232F3E;
-            border-radius: 15px;
-            padding: 30px;
-            max-width: 1200px;
-            width: 100%;
-            max-height: 80vh;
-            overflow: auto;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #FF9900;
-            padding-bottom: 15px;
-        }
-
-        .modal-header h2 {
-            color: #FF9900;
-            margin: 0;
-        }
-
-        .modal-close {
-            background: #dc3545;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-        }
-
-        .modal-close:hover {
-            background: #c82333;
-        }
-
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-
-        .data-table th {
-            background: rgba(255, 153, 0, 0.2);
-            color: #FF9900;
-            padding: 12px;
-            text-align: left;
-            font-weight: bold;
-            border-bottom: 2px solid #FF9900;
-        }
-
-        .data-table td {
-            padding: 10px 12px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            color: #fff;
-        }
-
-        .data-table tr:hover {
-            background: rgba(255, 153, 0, 0.1);
-        }
-
-        .status-badge-table {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: bold;
-        }
-
-        .badge-active-table {
-            background: #28a745;
-            color: white;
-        }
-
-        .badge-grounded-table {
-            background: #dc3545;
-            color: white;
-        }
-
-        .badge-passed-table {
-            background: #28a745;
-            color: white;
-        }
-
-        .badge-failed-table {
-            background: #dc3545;
-            color: white;
-        }
-
-        .modal-actions {
-            margin-top: 20px;
-            display: flex;
-            gap: 15px;
-        }
-
-        .empty-data {
-            text-align: center;
-            padding: 40px;
-            color: #aaa;
-            font-size: 18px;
-        }
-
-        .stat-card {
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(255, 153, 0, 0.3);
-        }
-
-        /* Modal Filter / Sort Toolbar */
-        .modal-toolbar {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 18px;
-            align-items: center;
-            padding: 14px 16px;
-            background: rgba(255,255,255,0.04);
-            border-radius: 10px;
-            border: 1px solid rgba(255,255,255,0.08);
-        }
-
-        .modal-toolbar input,
-        .modal-toolbar select {
-            background: #1a2332;
-            color: #fff;
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 6px;
-            padding: 7px 10px;
-            font-size: 13px;
-            outline: none;
-            transition: border 0.2s;
-        }
-
-        .modal-toolbar input:focus,
-        .modal-toolbar select:focus {
-            border-color: #FF9900;
-        }
-
-        .modal-toolbar input::placeholder {
-            color: #667;
-        }
-
-        .modal-toolbar select option {
-            background: #1a2332;
-            color: #fff;
-        }
-
-        .toolbar-label {
-            color: #aaa;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .toolbar-group {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .modal-toolbar .search-input {
-            flex: 1;
-            min-width: 140px;
-            max-width: 220px;
-        }
-
-        .modal-count {
-            color: #FF9900;
-            font-size: 13px;
-            font-weight: bold;
-            margin-left: auto;
-            white-space: nowrap;
-        }
-
-        /* ── Multi-select pills ── */
-        .ms-wrap {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
-        }
-
-        .ms-pill {
-            background: #1a2332;
-            color: #aaa;
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 16px;
-            padding: 5px 11px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: background 0.15s, color 0.15s, border-color 0.15s;
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
-            outline: none;
-        }
-
-        .ms-pill:hover {
-            border-color: rgba(255,153,0,0.4);
-            color: #fff;
-        }
-
-        .ms-pill.on {
-            background: rgba(255,153,0,0.18);
-            border-color: #FF9900;
-            color: #FF9900;
-            font-weight: 600;
-        }
-
-        .data-table th {
-            cursor: pointer;
-            user-select: none;
-            white-space: nowrap;
-        }
-
-        .data-table th:hover {
-            color: #fff;
-            background: rgba(255,153,0,0.3);
-        }
-
-        .data-table th .sort-arrow {
-            display: inline-block;
-            margin-left: 4px;
-            font-size: 10px;
-            opacity: 0.4;
-        }
-
-        .data-table th.active-sort .sort-arrow {
-            opacity: 1;
-            color: #FF9900;
-        }
-
-        /* ── Audit Progress Section ── */
-        .progress-section {
-            background: linear-gradient(135deg, rgba(255,153,0,0.07) 0%, rgba(34,45,60,0.6) 100%);
-            border: 1px solid rgba(255,153,0,0.25);
-            border-radius: 14px;
-            padding: 24px 26px;
-            margin-top: 28px;
-            margin-bottom: 8px;
-        }
-
-        .progress-section h3 {
-            margin: 0 0 4px;
-            color: #FF9900;
-            font-size: 18px;
-        }
-
-        .progress-week-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 18px;
-            flex-wrap: wrap;
-            gap: 6px;
-        }
-
-        .progress-week-badge {
-            background: rgba(255,153,0,0.15);
-            color: #FF9900;
-            border: 1px solid rgba(255,153,0,0.3);
-            border-radius: 20px;
-            padding: 4px 14px;
-            font-size: 13px;
-            font-weight: 600;
-        }
-
-        .progress-target-badge {
-            font-size: 13px;
-            color: #aaa;
-        }
-
-        .progress-target-badge strong {
-            color: #fff;
-        }
-
-        .progress-bar-wrap {
-            position: relative;
-            margin-bottom: 22px;
-            padding-top: 20px;
-        }
-
-        .progress-bar-track {
-            position: relative;
-            height: 28px;
-            background: rgba(255,255,255,0.06);
-            border-radius: 14px;
-            overflow: visible;
-        }
-
-        .progress-bar-fill {
-            height: 100%;
-            border-radius: 14px;
-            transition: width 0.6s ease, background 0.4s;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            padding-right: 12px;
-            font-size: 14px;
-            font-weight: bold;
-            color: #fff;
-            white-space: nowrap;
-            min-width: 46px;
-            text-shadow: 0 1px 3px rgba(0,0,0,0.4);
-        }
-
-        .progress-bar-fill.met {
-            background: linear-gradient(90deg, #28a745, #34ce57);
-        }
-
-        .progress-bar-fill.not-met {
-            background: linear-gradient(90deg, #FF9900, #ffb03a);
-        }
-
-        .progress-target-marker {
-            position: absolute;
-            top: -20px;
-            width: 2px;
-            height: calc(100% + 20px);
-            background: rgba(255,255,255,0.55);
-            border-radius: 1px;
-            pointer-events: none;
-            z-index: 2;
-        }
-
-        .progress-target-marker::before {
-            content: attr(data-label);
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 11px;
-            color: #ccc;
-            white-space: nowrap;
-            font-weight: 600;
-        }
-
-        .progress-numbers {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-            gap: 12px;
-        }
-
-        .progress-num-card {
-            background: rgba(255,255,255,0.04);
-            border-radius: 10px;
-            padding: 14px 12px;
-            text-align: center;
-            border: 1px solid rgba(255,255,255,0.06);
-        }
-
-        .progress-num-card.highlight-needed {
-            border-color: rgba(255,153,0,0.4);
-            background: rgba(255,153,0,0.08);
-        }
-
-        .progress-num-card.highlight-needed.zero {
-            border-color: rgba(40,167,69,0.4);
-            background: rgba(40,167,69,0.08);
-        }
-
-        .progress-num-value {
-            font-size: 26px;
-            font-weight: bold;
-            color: #FF9900;
-            line-height: 1.1;
-        }
-
-        .progress-num-card.highlight-needed .progress-num-value {
-            color: #FF9900;
-        }
-
-        .progress-num-card.highlight-needed.zero .progress-num-value {
-            color: #28a745;
-        }
-
-        .progress-num-label {
-            color: #aaa;
-            font-size: 12px;
-            margin-top: 4px;
-            line-height: 1.3;
-        }
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Amazon Ember',Arial,sans-serif;background:linear-gradient(135deg,#232F3E 0%,#131A22 100%);color:#fff;min-height:100vh}
+        .container{max-width:1200px;margin:0 auto;padding:20px}
+        .page{display:none}.page.active{display:block}
+
+        .login-container{display:flex;justify-content:center;align-items:center;min-height:100vh}
+        .login-box{background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);border-radius:15px;padding:40px;width:100%;max-width:400px;box-shadow:0 8px 32px rgba(0,0,0,0.3)}
+        .logo{text-align:center;margin-bottom:30px}
+        .logo h1{color:#FF9900;font-size:32px;margin-bottom:10px}
+        .logo p{color:#ccc;font-size:14px}
+        .form-group{margin-bottom:20px}
+        .form-group label{display:block;margin-bottom:8px;color:#ddd;font-size:14px}
+        .form-group input{width:100%;padding:12px;border:2px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:16px;transition:all 0.3s}
+        .form-group input:focus{outline:none;border-color:#FF9900;background:rgba(255,255,255,0.15)}
+
+        .btn{width:100%;padding:14px;border:none;border-radius:8px;font-size:16px;font-weight:bold;cursor:pointer;transition:all 0.3s;text-transform:uppercase}
+        .btn-primary{background:#FF9900;color:#131A22}
+        .btn-primary:hover{background:#FFB84D;transform:translateY(-2px);box-shadow:0 4px 12px rgba(255,153,0,0.4)}
+        .btn-success{background:#28a745;color:#fff}.btn-success:hover{background:#218838}
+        .btn-danger{background:#dc3545;color:#fff}.btn-danger:hover{background:#c82333}
+        .btn-secondary{background:#6c757d;color:#fff}.btn-secondary:hover{background:#5a6268}
+        .btn-info{background:#17a2b8;color:#fff}.btn-info:hover{background:#138496}
+
+        .header{background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);padding:20px;border-radius:15px;margin-bottom:30px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:15px}
+        .header h2{color:#FF9900;font-size:24px}
+        .header-actions{display:flex;gap:10px;flex-wrap:wrap}
+        .header-actions button{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-weight:bold;transition:all 0.3s}
+
+        .upload-section{background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);border-radius:15px;padding:30px;margin-bottom:20px}
+        .upload-section h3{color:#FF9900;margin-bottom:20px;font-size:20px}
+        .file-input-wrapper{position:relative;margin-bottom:15px}
+        .file-input-wrapper input[type="file"]{display:none}
+        .file-input-label{display:block;padding:15px;background:rgba(255,255,255,0.05);border:2px dashed rgba(255,255,255,0.3);border-radius:8px;text-align:center;cursor:pointer;transition:all 0.3s}
+        .file-input-label:hover{border-color:#FF9900;background:rgba(255,255,255,0.1)}
+        .file-name{color:#28a745;margin-top:5px;font-size:14px}
+
+        .status-message{padding:15px;border-radius:8px;margin-top:20px;font-size:14px}
+        .status-success{background:rgba(40,167,69,0.2);border:1px solid #28a745;color:#28a745}
+        .status-error{background:rgba(220,53,69,0.2);border:1px solid #dc3545;color:#dc3545}
+        .status-info{background:rgba(255,153,0,0.2);border:1px solid #FF9900;color:#FF9900}
+
+        .autocomplete-wrapper{position:relative;z-index:10000}
+        #autocomplete-list{position:absolute;top:100%;left:0;right:0;background:#232F3E;border:2px solid #FF9900;border-top:none;border-radius:0 0 8px 8px;max-height:400px;overflow-y:auto;z-index:10000;display:none;box-shadow:0 8px 24px rgba(0,0,0,0.5)}
+        .autocomplete-item{padding:12px 15px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.1);transition:background 0.2s}
+        .autocomplete-item:hover{background:rgba(255,153,0,0.2)}
+        .autocomplete-item strong{color:#FF9900}
+
+        /* Audit page */
+        #audit-page .container{padding:0}
+        #audit-page .header{background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);padding:12px 16px;border-radius:0 0 14px 14px;margin-bottom:0;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:nowrap}
+        #audit-page .header h2{font-size:18px;margin:0;color:#FF9900;white-space:nowrap}
+        #audit-page .header-actions{display:flex;gap:6px;flex-wrap:nowrap}
+        #audit-page .header-actions button{padding:6px 10px;font-size:12px}
+
+        .audit-search-bar{background:rgba(255,255,255,0.08);padding:12px 14px;display:flex;gap:8px;align-items:center}
+        .audit-search-bar .autocomplete-wrapper{flex:1;min-width:0}
+        .audit-search-bar #license-plate-input{width:100%;padding:12px 14px;border:2px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);border-radius:10px;color:#fff;font-size:17px;text-transform:uppercase;box-sizing:border-box}
+        .audit-search-bar #license-plate-input:focus{outline:none;border-color:#FF9900}
+        .audit-search-bar .btn-check{flex-shrink:0;padding:12px 16px;background:#FF9900;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:bold;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+        .audit-body{padding:12px 14px 24px}
+
+        /* Add-vehicle card */
+        .add-vehicle-card{background:rgba(255,153,0,0.08);border:2px solid #FF9900;border-radius:14px;padding:18px;display:none}
+        .add-vehicle-card.show{display:block}
+        .add-vehicle-card h3{color:#FF9900;margin:0 0 12px;font-size:16px}
+        .add-vehicle-card .add-field{margin-bottom:12px}
+        .add-vehicle-card .add-field label{display:block;color:#aaa;font-size:13px;margin-bottom:4px;font-weight:bold}
+        .add-vehicle-card .add-field input{width:100%;padding:10px 12px;border:2px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:15px;outline:none}
+        .add-vehicle-card .add-field input:focus{border-color:#FF9900}
+        .add-vehicle-card .add-btns{display:flex;gap:10px}
+        .add-vehicle-card .add-btns button{flex:1;padding:12px;border:none;border-radius:10px;font-size:15px;font-weight:bold;cursor:pointer}
+        .btn-add-save{background:#FF9900;color:#131A22}
+        .btn-add-cancel{background:rgba(255,255,255,0.1);color:#aaa;border:1px solid rgba(255,255,255,0.15)!important}
+
+        /* QR overlay — full screen, main audit interaction */
+        .qr-overlay{position:fixed;inset:0;z-index:5000;background:#131A22;display:none;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch}
+        .qr-overlay.show{display:flex}
+        .qr-overlay-top{background:rgba(255,255,255,0.06);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+        .qr-overlay-top .qr-back-btn{padding:8px 18px;background:rgba(255,255,255,0.1);color:#aaa;border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:14px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+        .qr-overlay-top .qr-back-btn:hover{color:#fff;border-color:rgba(255,255,255,0.3)}
+        .qr-overlay-top .qr-plate-title{font-size:20px;font-weight:bold;color:#FF9900}
+        .qr-overlay-body{flex:1;display:flex;flex-direction:column;align-items:center;padding:16px 20px 32px;gap:14px}
+
+        .qr-grounded-banner{width:100%;max-width:360px;background:rgba(220,53,69,0.2);border:3px solid #dc3545;border-radius:12px;padding:12px;text-align:center;animation:pulseGroundedWarning 1.5s ease-in-out infinite;display:none}
+        .qr-grounded-banner.show{display:block}
+        .qr-grounded-banner span{font-size:18px;font-weight:bold;color:#dc3545}
+
+        .qr-code-wrap{background:#fff;border-radius:16px;padding:20px;display:inline-block}
+        #qr-code{display:inline-block}
+        .qr-vehicle-info{color:#aaa;font-size:14px;text-align:center;line-height:1.6}
+        .qr-vehicle-info strong{color:#fff}
+        .qr-vehicle-info .qr-vin{font-family:monospace;font-size:13px;color:#FF9900;word-break:break-all}
+
+        .qr-decision-area{width:100%;max-width:360px;display:flex;flex-direction:column;gap:10px;margin-top:6px}
+        .qr-decision-row{display:flex;gap:12px}
+        .qr-decision-row button{flex:1;padding:18px 10px;font-size:18px;font-weight:bold;border:none;border-radius:14px;cursor:pointer;text-transform:uppercase;color:#fff;-webkit-tap-highlight-color:transparent}
+        .btn-van-ok{background:linear-gradient(135deg,#28a745,#20c997);box-shadow:0 4px 15px rgba(40,167,69,0.4)}
+        .btn-vsa-block{background:linear-gradient(135deg,#dc3545,#c82333);box-shadow:0 4px 15px rgba(220,53,69,0.4)}
+
+        .qr-problem-area{width:100%;max-width:360px;display:none}
+        .qr-problem-area.show{display:block}
+        .qr-problem-area h3{color:#dc3545;font-size:15px;margin-bottom:8px}
+        .qr-problem-area textarea{width:100%;min-height:80px;padding:12px;border:2px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:16px;resize:vertical;outline:none;box-sizing:border-box}
+        .qr-problem-area textarea:focus{border-color:#dc3545}
+        .qr-problem-area .btn-submit-block{margin-top:10px;width:100%;padding:16px;background:#dc3545;color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:bold;cursor:pointer}
+
+        .qr-saved-msg{width:100%;max-width:360px;background:rgba(40,167,69,0.15);border:2px solid #28a745;border-radius:12px;padding:16px;text-align:center;display:none;animation:fadeInUp 0.3s ease}
+        .qr-saved-msg.show{display:block}
+        .qr-saved-msg span{font-size:18px;font-weight:bold;color:#28a745}
+
+        @keyframes fadeInUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes pulseGlow{0%,100%{box-shadow:0 0 10px rgba(255,193,7,0.5)}50%{box-shadow:0 0 20px rgba(255,193,7,0.8)}}
+        @keyframes pulseGroundedWarning{0%,100%{box-shadow:0 0 15px rgba(220,53,69,0.6)}50%{box-shadow:0 0 30px rgba(220,53,69,1)}}
+
+        .status-badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:bold;color:#fff}
+        .badge-active{background:#28a745}.badge-grounded{background:#dc3545}
+
+        .download-section{background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);border-radius:15px;padding:30px}
+        .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin-bottom:30px}
+        .stat-card{background:rgba(255,255,255,0.05);border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:all 0.3s}
+        .stat-card:hover{transform:translateY(-5px);box-shadow:0 8px 20px rgba(255,153,0,0.3)}
+        .stat-value{font-size:36px;font-weight:bold;color:#FF9900;margin-bottom:5px}
+        .stat-label{color:#aaa;font-size:14px}
+        .download-buttons{display:flex;gap:15px;flex-wrap:wrap;margin-top:20px}
+        .download-buttons button{flex:1;min-width:200px}
+
+        .loading-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);display:none;justify-content:center;align-items:center;z-index:9999}
+        .loading-overlay.show{display:flex}
+        .spinner{border:4px solid rgba(255,255,255,0.1);border-top:4px solid #FF9900;border-radius:50%;width:60px;height:60px;animation:spin 1s linear infinite}
+        @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+        .loading-text{position:absolute;margin-top:100px;color:#FF9900;font-size:16px}
+
+        @media(max-width:768px){
+            .container{padding:10px}
+            .header{flex-direction:column;align-items:stretch}
+            .header-actions{flex-direction:column}
+            .header-actions button{width:100%}
+            #audit-page .header{flex-direction:row;align-items:center}
+            #audit-page .header-actions{flex-direction:row}
+            #audit-page .header-actions button{width:auto}
+            #audit-page .container{padding:0}
+            .download-buttons{flex-direction:column}
+            .download-buttons button{width:100%}
+            .stats-grid{grid-template-columns:1fr}
+        }
+
+        .hidden{display:none!important}
+        .firebase-status{background:rgba(66,133,244,0.1);border:1px solid #4285f4;border-radius:8px;padding:15px;margin-bottom:20px}
+        .firebase-status.connected{background:rgba(40,167,69,0.1);border-color:#28a745}
+        .firebase-status.error{background:rgba(220,53,69,0.1);border-color:#dc3545}
+
+        .collapsible-header{display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;padding:5px 0;margin-bottom:15px}
+        .collapsible-header:hover{opacity:0.8}
+        .collapse-icon{font-size:20px;transition:transform 0.3s}
+        .collapse-icon.collapsed{transform:rotate(-90deg)}
+        .collapsible-content{max-height:2000px;overflow:hidden;transition:max-height 0.3s ease-out,opacity 0.3s ease-out;opacity:1}
+        .collapsible-content.hidden{max-height:0;opacity:0}
+
+        .modal{display:none;position:fixed;z-index:10000;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.8);overflow:auto}
+        .modal.show{display:flex;justify-content:center;align-items:center;padding:20px}
+        .modal-content{background:#232F3E;border-radius:15px;padding:30px;max-width:1200px;width:100%;max-height:80vh;overflow:auto;box-shadow:0 8px 32px rgba(0,0,0,0.5)}
+        .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:2px solid #FF9900;padding-bottom:15px}
+        .modal-header h2{color:#FF9900;margin:0}
+        .modal-close{background:#dc3545;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:16px;font-weight:bold}
+        .modal-close:hover{background:#c82333}
+        .data-table{width:100%;border-collapse:collapse;margin-top:20px}
+        .data-table th{background:rgba(255,153,0,0.2);color:#FF9900;padding:12px;text-align:left;font-weight:bold;border-bottom:2px solid #FF9900;cursor:pointer;user-select:none;white-space:nowrap}
+        .data-table th:hover{color:#fff;background:rgba(255,153,0,0.3)}
+        .data-table th .sort-arrow{display:inline-block;margin-left:4px;font-size:10px;opacity:0.4}
+        .data-table th.active-sort .sort-arrow{opacity:1;color:#FF9900}
+        .data-table td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.1);color:#fff}
+        .data-table tr:hover{background:rgba(255,153,0,0.1)}
+        .status-badge-table{display:inline-block;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:bold}
+        .badge-active-table{background:#28a745;color:#fff}.badge-grounded-table{background:#dc3545;color:#fff}
+        .badge-passed-table{background:#28a745;color:#fff}.badge-failed-table{background:#dc3545;color:#fff}
+        .modal-actions{margin-top:20px;display:flex;gap:15px}
+        .empty-data{text-align:center;padding:40px;color:#aaa;font-size:18px}
+
+        .modal-toolbar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;align-items:center;padding:14px 16px;background:rgba(255,255,255,0.04);border-radius:10px;border:1px solid rgba(255,255,255,0.08)}
+        .modal-toolbar input{background:#1a2332;color:#fff;border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:7px 10px;font-size:13px;outline:none}
+        .modal-toolbar input:focus{border-color:#FF9900}
+        .modal-toolbar input::placeholder{color:#667}
+        .toolbar-label{color:#aaa;font-size:12px;text-transform:uppercase;letter-spacing:0.5px}
+        .toolbar-group{display:flex;align-items:center;gap:5px}
+        .modal-toolbar .search-input{flex:1;min-width:140px;max-width:220px}
+        .modal-count{color:#FF9900;font-size:13px;font-weight:bold;margin-left:auto;white-space:nowrap}
+
+        .ms-wrap{display:flex;flex-wrap:wrap;gap:5px}
+        .ms-pill{background:#1a2332;color:#aaa;border:1px solid rgba(255,255,255,0.15);border-radius:16px;padding:5px 11px;font-size:12px;cursor:pointer;transition:background 0.15s,color 0.15s,border-color 0.15s;-webkit-tap-highlight-color:transparent;user-select:none;outline:none}
+        .ms-pill:hover{border-color:rgba(255,153,0,0.4);color:#fff}
+        .ms-pill.on{background:rgba(255,153,0,0.18);border-color:#FF9900;color:#FF9900;font-weight:600}
+
+        .progress-section{background:linear-gradient(135deg,rgba(255,153,0,0.07) 0%,rgba(34,45,60,0.6) 100%);border:1px solid rgba(255,153,0,0.25);border-radius:14px;padding:24px 26px;margin-top:28px;margin-bottom:8px}
+        .progress-section h3{margin:0 0 4px;color:#FF9900;font-size:18px}
+        .progress-week-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:6px}
+        .progress-week-badge{background:rgba(255,153,0,0.15);color:#FF9900;border:1px solid rgba(255,153,0,0.3);border-radius:20px;padding:4px 14px;font-size:13px;font-weight:600}
+        .progress-target-badge{font-size:13px;color:#aaa}
+        .progress-target-badge strong{color:#fff}
+        .progress-bar-wrap{position:relative;margin-bottom:22px;padding-top:20px}
+        .progress-bar-track{position:relative;height:28px;background:rgba(255,255,255,0.06);border-radius:14px;overflow:visible}
+        .progress-bar-fill{height:100%;border-radius:14px;transition:width 0.6s ease,background 0.4s;display:flex;align-items:center;justify-content:flex-end;padding-right:12px;font-size:14px;font-weight:bold;color:#fff;white-space:nowrap;min-width:46px;text-shadow:0 1px 3px rgba(0,0,0,0.4)}
+        .progress-bar-fill.met{background:linear-gradient(90deg,#28a745,#34ce57)}
+        .progress-bar-fill.not-met{background:linear-gradient(90deg,#FF9900,#ffb03a)}
+        .progress-target-marker{position:absolute;top:-20px;width:2px;height:calc(100% + 20px);background:rgba(255,255,255,0.55);border-radius:1px;pointer-events:none;z-index:2}
+        .progress-target-marker::before{content:attr(data-label);position:absolute;top:0;left:50%;transform:translateX(-50%);font-size:11px;color:#ccc;white-space:nowrap;font-weight:600}
+        .progress-numbers{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
+        .progress-num-card{background:rgba(255,255,255,0.04);border-radius:10px;padding:14px 12px;text-align:center;border:1px solid rgba(255,255,255,0.06)}
+        .progress-num-card.highlight-needed{border-color:rgba(255,153,0,0.4);background:rgba(255,153,0,0.08)}
+        .progress-num-card.highlight-needed.zero{border-color:rgba(40,167,69,0.4);background:rgba(40,167,69,0.08)}
+        .progress-num-value{font-size:26px;font-weight:bold;color:#FF9900;line-height:1.1}
+        .progress-num-card.highlight-needed .progress-num-value{color:#FF9900}
+        .progress-num-card.highlight-needed.zero .progress-num-value{color:#28a745}
+        .progress-num-label{color:#aaa;font-size:12px;margin-top:4px;line-height:1.3}
     </style>
 </head>
 <body>
-    <!-- Loading Overlay -->
-    <div class="loading-overlay" id="loading-overlay">
-        <div>
-            <div class="spinner"></div>
-            <div class="loading-text" id="loading-text">Processing...</div>
-        </div>
-    </div>
+    <div class="loading-overlay" id="loading-overlay"><div><div class="spinner"></div><div class="loading-text" id="loading-text">Processing...</div></div></div>
 
-    <!-- Login Page -->
+    <!-- LOGIN -->
     <div class="page active" id="login-page">
-        <div class="login-container">
-            <div class="login-box">
-                <div class="logo">
-                    <h1>🚐 VSA Audit</h1>
-                    <p>Vehicle Safety Audit System</p>
-                    <p style="font-size: 12px; margin-top: 10px; color: #FF9900;">Multi-User Cloud Database</p>
+        <div class="login-container"><div class="login-box">
+            <div class="logo"><h1>🚐 VSA Audit</h1><p>Vehicle Safety Audit System</p><p style="font-size:12px;margin-top:10px;color:#FF9900;">Multi-User Cloud Database</p></div>
+            <form id="login-form">
+                <div class="form-group"><label for="username">Email</label><input type="email" id="username" required autocomplete="email" placeholder="user@example.com"></div>
+                <div class="form-group"><label for="password">Password</label><input type="password" id="password" required autocomplete="current-password"></div>
+                <button type="submit" class="btn btn-primary">Login</button>
+            </form>
+            <div id="login-error" class="status-message status-error hidden" style="margin-top:15px;">Invalid credentials</div>
+        </div></div>
+    </div>
+
+    <!-- UPLOAD / DATA MANAGEMENT -->
+    <div class="page" id="upload-page"><div class="container">
+        <div class="header"><h2>📁 Data Management</h2>
+            <div class="header-actions">
+                <button onclick="showPage('audit-page')" class="btn-primary">Go to Audit</button>
+                <button onclick="showPage('download-page')" class="btn-secondary">View Reports</button>
+                <button onclick="logout()" class="btn-danger">Logout</button>
+            </div>
+        </div>
+        <div id="firebase-status-section" class="upload-section" style="display:none;">
+            <div class="collapsible-header" onclick="toggleSection('firebase-status')"><h3>🔗 Connection Status</h3><span class="collapse-icon" id="firebase-status-icon">▼</span></div>
+            <div id="firebase-status-content" class="collapsible-content">
+                <div id="firebase-status" class="firebase-status"><div style="display:flex;align-items:center;gap:10px;"><span id="firebase-icon" style="font-size:24px;">🔴</span><div><div id="firebase-text" style="font-weight:bold;"></div><div id="firebase-detail" style="font-size:12px;margin-top:5px;"></div></div></div></div>
+            </div>
+        </div>
+        <div class="upload-section">
+            <div class="collapsible-header" onclick="toggleSection('upload-files')"><h3>📊 Upload Data Files</h3><span class="collapse-icon collapsed" id="upload-files-icon">▼</span></div>
+            <div id="upload-files-content" class="collapsible-content hidden">
+                <p style="color:#aaa;margin-bottom:20px;">Upload files to update the shared database (all users will see changes)</p>
+                <div class="file-input-wrapper"><input type="file" id="dive-deep-file" accept=".csv" onchange="handleFileSelect(this,'dive-deep')"><label for="dive-deep-file" class="file-input-label">📄 Click to select Expected Vehicles (Active) CSV<div class="file-name" id="dive-deep-name"></div></label></div>
+                <div class="file-input-wrapper"><input type="file" id="vin-audit-file" accept=".xlsx" onchange="handleFileSelect(this,'vin-audit')"><label for="vin-audit-file" class="file-input-label">📋 Click to select VIN Audit Detail XLSX<div class="file-name" id="vin-audit-name"></div></label></div>
+                <div class="file-input-wrapper"><input type="file" id="grounded-file" accept=".xlsx" onchange="handleFileSelect(this,'grounded')"><label for="grounded-file" class="file-input-label">🚫 Click to select Current Grounded Vehicle XLSX<div class="file-name" id="grounded-name"></div></label></div>
+                <button onclick="processFiles()" class="btn btn-primary" style="margin-top:20px;">Process & Upload to Cloud</button>
+                <div id="upload-status"></div>
+            </div>
+        </div>
+        <div class="upload-section">
+            <h3>📈 Current Database Status</h3>
+            <p style="color:#aaa;margin-bottom:15px;font-size:13px;">Click any card to view details</p>
+            <div class="stats-grid">
+                <div class="stat-card" onclick="viewVehicleData('active')"><div class="stat-value" id="total-vehicles">0</div><div class="stat-label">Active Vehicles</div></div>
+                <div class="stat-card" onclick="viewVehicleData('grounded')"><div class="stat-value" id="grounded-count">0</div><div class="stat-label">Grounded Vehicles</div></div>
+                <div class="stat-card" onclick="viewVehicleData('audited')"><div class="stat-value" id="audited-count">0</div><div class="stat-label">Already Audited</div></div>
+                <div class="stat-card" style="border:2px solid #FF9900;background:rgba(255,153,0,0.08);" onclick="viewVehicleData('to-audit')"><div class="stat-value" id="to-audit-count" style="color:#FF9900;">0</div><div class="stat-label" style="color:#FF9900;font-weight:bold;">🚐 To Be Audited</div></div>
+            </div>
+            <div class="progress-section">
+                <h3>📊 Audit Progress</h3>
+                <div class="progress-week-row">
+                    <span class="progress-week-badge" id="progress-week-badge">Week —</span>
+                    <span class="progress-target-badge" id="progress-target-badge">Target: <strong>70%</strong></span>
                 </div>
-                <form id="login-form">
-                    <div class="form-group">
-                        <label for="username">Email</label>
-                        <input type="email" id="username" required autocomplete="email" placeholder="user@example.com">
-                    </div>
-                    <div class="form-group">
-                        <label for="password">Password</label>
-                        <input type="password" id="password" required autocomplete="current-password">
-                    </div>
-                    <button type="submit" class="btn btn-primary">Login</button>
-                </form>
-                <div id="login-error" class="status-message status-error hidden" style="margin-top: 15px;">
-                    Invalid credentials
+                <div class="progress-bar-wrap"><div class="progress-bar-track">
+                    <div class="progress-bar-fill not-met" id="progress-fill" style="width:0%">0%</div>
+                    <div class="progress-target-marker" id="progress-target-marker" style="left:70%" data-label="Target 70%"></div>
+                </div></div>
+                <div class="progress-numbers">
+                    <div class="progress-num-card"><div class="progress-num-value" id="prog-current-pct">0%</div><div class="progress-num-label">Current %</div></div>
+                    <div class="progress-num-card"><div class="progress-num-value" id="prog-target-pct">70%</div><div class="progress-num-label">Target %</div></div>
+                    <div class="progress-num-card"><div class="progress-num-value" id="prog-audited">0</div><div class="progress-num-label">Audited</div></div>
+                    <div class="progress-num-card"><div class="progress-num-value" id="prog-total">0</div><div class="progress-num-label">Total to Audit</div></div>
+                    <div class="progress-num-card highlight-needed" id="prog-needed-card"><div class="progress-num-value" id="prog-needed">0</div><div class="progress-num-label">Still needed<br>to reach target</div></div>
+                </div>
+            </div>
+            <h3 style="margin-top:30px;">🗑️ Database Management</h3>
+            <p style="color:#aaa;margin-bottom:20px;">Clear databases to start fresh (affects all users)</p>
+            <div style="display:flex;gap:15px;flex-wrap:wrap;">
+                <button onclick="clearVehicleDatabase()" class="btn btn-danger" style="flex:1;min-width:200px;">🗑️ Clear Vehicle Database</button>
+                <button onclick="clearAuditDatabase()" class="btn btn-danger" style="flex:1;min-width:200px;">🗑️ Clear Audit Database</button>
+                <button onclick="clearAllDatabases()" class="btn btn-danger" style="flex:1;min-width:200px;">⚠️ Clear Everything</button>
+            </div>
+            <div id="clear-status"></div>
+        </div>
+    </div></div>
+
+    <!-- AUDIT PAGE -->
+    <div class="page" id="audit-page"><div class="container">
+        <div class="header"><h2>🔍 VSA Audit</h2>
+            <div class="header-actions">
+                <button onclick="showPage('upload-page')" class="btn-secondary">Data</button>
+                <button onclick="showPage('download-page')" class="btn-secondary">Reports</button>
+                <button onclick="logout()" class="btn-danger">Logout</button>
+            </div>
+        </div>
+        <div class="audit-search-bar">
+            <div class="autocomplete-wrapper">
+                <input type="text" id="license-plate-input" placeholder="e.g. HB449JJ" autocomplete="off" inputmode="numeric">
+                <div id="autocomplete-list"></div>
+            </div>
+            <button onclick="searchVehicle()" class="btn-check">🔍</button>
+        </div>
+        <div class="audit-body">
+            <div class="add-vehicle-card" id="add-vehicle-card">
+                <h3>➕ Vehicle not found — Add to database</h3>
+                <div class="add-field"><label>License Plate</label><input type="text" id="add-plate" readonly style="opacity:0.7;"></div>
+                <div class="add-field"><label>DSP (Delivery Service Partner)</label><input type="text" id="add-dsp" placeholder="e.g. AMZL, DHL…"></div>
+                <div class="add-btns">
+                    <button class="btn-add-save" onclick="saveNewVehicle()">💾 Add Vehicle</button>
+                    <button class="btn-add-cancel" onclick="cancelAddVehicle()">Cancel</button>
                 </div>
             </div>
         </div>
-    </div>
+    </div></div>
 
-    <!-- Upload Page -->
-    <div class="page" id="upload-page">
-        <div class="container">
-            <div class="header">
-                <h2>📁 Data Management</h2>
-                <div class="header-actions">
-                    <button onclick="showPage('audit-page')" class="btn-primary">Go to Audit</button>
-                    <button onclick="showPage('download-page')" class="btn-secondary">View Reports</button>
-                    <button onclick="logout()" class="btn-danger">Logout</button>
-                </div>
-            </div>
-
-            <!-- Firebase Status -->
-            <div id="firebase-status-section" class="upload-section" style="display: none;">
-                <div class="collapsible-header" onclick="toggleSection('firebase-status')">
-                    <h3>🔗 Connection Status</h3>
-                    <span class="collapse-icon" id="firebase-status-icon">▼</span>
-                </div>
-                <div id="firebase-status-content" class="collapsible-content">
-                    <div id="firebase-status" class="firebase-status">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <span id="firebase-icon" style="font-size: 24px;">🔴</span>
-                            <div>
-                                <div id="firebase-text" style="font-weight: bold;"></div>
-                                <div id="firebase-detail" style="font-size: 12px; margin-top: 5px;"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="upload-section">
-                <div class="collapsible-header" onclick="toggleSection('upload-files')">
-                    <h3>📊 Upload Data Files</h3>
-                    <span class="collapse-icon collapsed" id="upload-files-icon">▼</span>
-                </div>
-                <div id="upload-files-content" class="collapsible-content hidden">
-                    <p style="color: #aaa; margin-bottom: 20px;">Upload files to update the shared database (all users will see changes)</p>
-
-                    <div class="file-input-wrapper">
-                        <input type="file" id="dive-deep-file" accept=".csv" onchange="handleFileSelect(this, 'dive-deep')">
-                        <label for="dive-deep-file" class="file-input-label">
-                            📄 Click to select Expected Vehicles (Active) CSV
-                            <div class="file-name" id="dive-deep-name"></div>
-                        </label>
-                    </div>
-
-                    <div class="file-input-wrapper">
-                        <input type="file" id="vin-audit-file" accept=".xlsx" onchange="handleFileSelect(this, 'vin-audit')">
-                        <label for="vin-audit-file" class="file-input-label">
-                            📋 Click to select VIN Audit Detail XLSX
-                            <div class="file-name" id="vin-audit-name"></div>
-                        </label>
-                    </div>
-
-                    <div class="file-input-wrapper">
-                        <input type="file" id="grounded-file" accept=".xlsx" onchange="handleFileSelect(this, 'grounded')">
-                        <label for="grounded-file" class="file-input-label">
-                            🚫 Click to select Current Grounded Vehicle XLSX
-                            <div class="file-name" id="grounded-name"></div>
-                        </label>
-                    </div>
-
-                    <button onclick="processFiles()" class="btn btn-primary" style="margin-top: 20px;">
-                        Process & Upload to Cloud
-                    </button>
-
-                    <div id="upload-status"></div>
-                </div>
-            </div>
-
-            <div class="upload-section">
-                <h3>📈 Current Database Status</h3>
-                <p style="color: #aaa; margin-bottom: 15px; font-size: 13px;">Click any card to view details</p>
-                <div class="stats-grid">
-                    <div class="stat-card" onclick="viewVehicleData('active')">
-                        <div class="stat-value" id="total-vehicles">0</div>
-                        <div class="stat-label">Active Vehicles</div>
-                    </div>
-                    <div class="stat-card" onclick="viewVehicleData('grounded')">
-                        <div class="stat-value" id="grounded-count">0</div>
-                        <div class="stat-label">Grounded Vehicles</div>
-                    </div>
-                    <div class="stat-card" onclick="viewVehicleData('audited')">
-                        <div class="stat-value" id="audited-count">0</div>
-                        <div class="stat-label">Already Audited</div>
-                    </div>
-                    <div class="stat-card" style="border: 2px solid #FF9900; background: rgba(255,153,0,0.08);" onclick="viewVehicleData('to-audit')">
-                        <div class="stat-value" id="to-audit-count" style="color: #FF9900;">0</div>
-                        <div class="stat-label" style="color: #FF9900; font-weight: bold;">🚐 To Be Audited</div>
-                    </div>
-                </div>
-
-                <!-- Audit Progress -->
-                <div class="progress-section">
-                    <h3>📊 Audit Progress</h3>
-                    <div class="progress-week-row">
-                        <span class="progress-week-badge" id="progress-week-badge">Week —</span>
-                        <span class="progress-target-badge" id="progress-target-badge">Target: <strong>—%</strong></span>
-                    </div>
-
-                    <div class="progress-bar-wrap">
-                        <div class="progress-bar-track">
-                            <div class="progress-bar-fill not-met" id="progress-fill" style="width:0%">0%</div>
-                            <div class="progress-target-marker" id="progress-target-marker" style="left:65%" data-label="Target 65%"></div>
-                        </div>
-                    </div>
-
-                    <div class="progress-numbers">
-                        <div class="progress-num-card">
-                            <div class="progress-num-value" id="prog-current-pct">0%</div>
-                            <div class="progress-num-label">Current %</div>
-                        </div>
-                        <div class="progress-num-card">
-                            <div class="progress-num-value" id="prog-target-pct">65%</div>
-                            <div class="progress-num-label">Target %</div>
-                        </div>
-                        <div class="progress-num-card">
-                            <div class="progress-num-value" id="prog-audited">0</div>
-                            <div class="progress-num-label">Audited</div>
-                        </div>
-                        <div class="progress-num-card">
-                            <div class="progress-num-value" id="prog-total">0</div>
-                            <div class="progress-num-label">Total to Audit</div>
-                        </div>
-                        <div class="progress-num-card highlight-needed" id="prog-needed-card">
-                            <div class="progress-num-value" id="prog-needed">0</div>
-                            <div class="progress-num-label">Still needed<br>to reach target</div>
-                        </div>
-                    </div>
-                </div>
-
-                <h3 style="margin-top: 30px;">🗑️ Database Management</h3>
-                <p style="color: #aaa; margin-bottom: 20px;">Clear databases to start fresh (affects all users)</p>
-                
-                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                    <button onclick="clearVehicleDatabase()" class="btn btn-danger" style="flex: 1; min-width: 200px;">
-                        🗑️ Clear Vehicle Database
-                    </button>
-                    <button onclick="clearAuditDatabase()" class="btn btn-danger" style="flex: 1; min-width: 200px;">
-                        🗑️ Clear Audit Database
-                    </button>
-                    <button onclick="clearAllDatabases()" class="btn btn-danger" style="flex: 1; min-width: 200px;">
-                        ⚠️ Clear Everything
-                    </button>
-                </div>
-                
-                <div id="clear-status"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Audit Page -->
-    <div class="page" id="audit-page">
-        <div class="container">
-            <div class="header">
-                <h2>🔍 VSA Audit</h2>
-                <div class="header-actions">
-                    <button onclick="showPage('upload-page')" class="btn-secondary">Data Management</button>
-                    <button onclick="showPage('download-page')" class="btn-secondary">View Reports</button>
-                    <button onclick="logout()" class="btn-danger">Logout</button>
-                </div>
-            </div>
-
-            <!-- Search bar: stuck under header -->
-            <div class="audit-search-bar">
-                <div class="autocomplete-wrapper">
-                    <input type="text" id="license-plate-input" placeholder="e.g. HB449JJ" autocomplete="off">
-                    <div id="autocomplete-list"></div>
-                </div>
-                <button onclick="searchVehicle()" class="btn-check">🔍</button>
-            </div>
-
-            <!-- Body: vehicle card + decisions + problem (all inline) -->
-            <div class="audit-body">
-
-                <div class="vehicle-info-card" id="vehicle-info-card">
-                    <div class="grounded-warning" id="grounded-warning" style="display:none;">
-                        <div class="grounded-warning-text">🚫 VEHICLE GROUNDED 🚫<br>THIS VAN CANNOT GO OUT</div>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">License Plate</span>
-                        <span class="info-value" id="info-plate"></span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">VIN</span>
-                        <span class="info-value" id="info-vin" style="font-size:13px; word-break:break-all; text-align:right;"></span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">DSP</span>
-                        <span class="info-value" id="info-dsp"></span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Status</span>
-                        <span class="info-value" id="info-status"></span>
-                    </div>
-                    <div class="last-audit-box needs-vsa" id="last-audit-box">
-                        <span class="info-label">⚠️ Last Audit</span>
-                        <span class="info-value" id="info-last-audit">—</span>
-                    </div>
-
-                    <button onclick="resetAudit()" class="btn-check-another">🔄 Check Another Vehicle</button>
-
-                    <div class="decision-buttons">
-                        <button onclick="vanOK()" class="btn-van-ok">✅ VAN OK</button>
-                        <button onclick="vsaBlock()" class="btn-vsa-block">❌ VSA BLOCK</button>
-                    </div>
-                </div>
-
-                <!-- Problem description (shown inline when VSA BLOCK tapped) -->
-                <div class="problem-card" id="problem-card">
-                    <h3>⚠️ Describe the Problem</h3>
-                    <textarea id="problem-description" placeholder="Enter the problem details…"></textarea>
-                    <button onclick="submitProblem()" class="btn-submit-problem">Continue →</button>
-                </div>
-
-            </div>
-        </div>
-    </div>
-
-    <!-- QR Overlay (full-screen, on top of everything) -->
+    <!-- QR OVERLAY -->
     <div class="qr-overlay" id="qr-overlay">
-        <div class="qr-overlay-title passed" id="qr-overlay-title">✅ Van OK</div>
-        <div id="qr-code"></div>
-        <div class="qr-overlay-info" id="qr-overlay-info"></div>
-        <div class="qr-overlay-buttons">
-            <button onclick="saveAudit()" class="btn-save">💾 Save Audit</button>
-            <button onclick="resetAudit()" class="btn-next">🔄 Check Another Vehicle</button>
+        <div class="qr-overlay-top">
+            <button class="qr-back-btn" onclick="resetAudit()">← Back</button>
+            <span class="qr-plate-title" id="qr-plate-title"></span>
+            <span style="width:70px;"></span>
+        </div>
+        <div class="qr-overlay-body">
+            <div class="qr-grounded-banner" id="qr-grounded-banner"><span>🚫 VEHICLE GROUNDED 🚫<br>THIS VAN CANNOT GO OUT</span></div>
+            <div class="qr-code-wrap"><div id="qr-code"></div></div>
+            <div class="qr-vehicle-info" id="qr-vehicle-info"></div>
+            <div class="qr-decision-area" id="qr-decision-area"><div class="qr-decision-row">
+                <button onclick="vanOK()" class="btn-van-ok">✅ VAN OK</button>
+                <button onclick="vsaBlock()" class="btn-vsa-block">❌ VSA BLOCK</button>
+            </div></div>
+            <div class="qr-problem-area" id="qr-problem-area">
+                <h3>⚠️ Describe the Problem</h3>
+                <textarea id="problem-description" placeholder="Enter the problem details…"></textarea>
+                <button onclick="submitBlock()" class="btn-submit-block">💾 Save Block</button>
+            </div>
+            <div class="qr-saved-msg" id="qr-saved-msg"><span>✅ Audit saved!</span></div>
         </div>
     </div>
 
-    <!-- Download Page -->
-    <div class="page" id="download-page">
-        <div class="container">
-            <div class="header">
-                <h2>📊 Reports & Analytics</h2>
-                <div class="header-actions">
-                    <button onclick="showPage('upload-page')" class="btn-secondary">Data Management</button>
-                    <button onclick="showPage('audit-page')" class="btn-primary">Go to Audit</button>
-                    <button onclick="logout()" class="btn-danger">Logout</button>
-                </div>
-            </div>
-
-            <div class="download-section">
-                <h3>📈 Audit Statistics</h3>
-                <p style="color: #aaa; margin-bottom: 15px; font-size: 13px;">Click any card to view details</p>
-                <div class="stats-grid">
-                    <div class="stat-card" onclick="viewAuditData('all')">
-                        <div class="stat-value" id="report-total-audits">0</div>
-                        <div class="stat-label">Total Audits</div>
-                    </div>
-                    <div class="stat-card" onclick="viewAuditData('passed')">
-                        <div class="stat-value" id="report-passed">0</div>
-                        <div class="stat-label">Passed (OK)</div>
-                    </div>
-                    <div class="stat-card" onclick="viewAuditData('failed')">
-                        <div class="stat-value" id="report-failed">0</div>
-                        <div class="stat-label">Failed (Blocked)</div>
-                    </div>
-                    <div class="stat-card" onclick="viewAuditData('today')">
-                        <div class="stat-value" id="report-today">0</div>
-                        <div class="stat-label">Today's Audits</div>
-                    </div>
-                </div>
-
-                <h3 style="margin-top: 30px;">📥 Download Reports</h3>
-                <div class="download-buttons">
-                    <button onclick="downloadAllAudits()" class="btn btn-primary">
-                        Download All Audits
-                    </button>
-                    <button onclick="downloadPassedOnly()" class="btn btn-success">
-                        Download Passed Only
-                    </button>
-                    <button onclick="downloadFailedOnly()" class="btn btn-danger">
-                        Download Failed Only
-                    </button>
-                </div>
-
-                <div id="download-status"></div>
+    <!-- DOWNLOAD / REPORTS -->
+    <div class="page" id="download-page"><div class="container">
+        <div class="header"><h2>📊 Reports & Analytics</h2>
+            <div class="header-actions">
+                <button onclick="showPage('upload-page')" class="btn-secondary">Data Management</button>
+                <button onclick="showPage('audit-page')" class="btn-primary">Go to Audit</button>
+                <button onclick="logout()" class="btn-danger">Logout</button>
             </div>
         </div>
-    </div>
-
-    <!-- Data View Modal -->
-    <div class="modal" id="data-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modal-title">Data View</h2>
-                <button class="modal-close" onclick="closeModal()">✕ Close</button>
+        <div class="download-section">
+            <h3>📈 Audit Statistics</h3>
+            <p style="color:#aaa;margin-bottom:15px;font-size:13px;">Click any card to view details</p>
+            <div class="stats-grid">
+                <div class="stat-card" onclick="viewAuditData('all')"><div class="stat-value" id="report-total-audits">0</div><div class="stat-label">Total Audits</div></div>
+                <div class="stat-card" onclick="viewAuditData('passed')"><div class="stat-value" id="report-passed">0</div><div class="stat-label">Passed (OK)</div></div>
+                <div class="stat-card" onclick="viewAuditData('failed')"><div class="stat-value" id="report-failed">0</div><div class="stat-label">Failed (Blocked)</div></div>
+                <div class="stat-card" onclick="viewAuditData('today')"><div class="stat-value" id="report-today">0</div><div class="stat-label">Today's Audits</div></div>
             </div>
-            <div id="modal-body">
-                <!-- Data will be inserted here -->
+            <h3 style="margin-top:30px;">📥 Download Reports</h3>
+            <div class="download-buttons">
+                <button onclick="downloadAllAudits()" class="btn btn-primary">Download All Audits</button>
+                <button onclick="downloadPassedOnly()" class="btn btn-success">Download Passed Only</button>
+                <button onclick="downloadFailedOnly()" class="btn btn-danger">Download Failed Only</button>
             </div>
-            <div class="modal-actions">
-                <button onclick="exportModalData()" class="btn btn-success">
-                    📥 Export to CSV
-                </button>
-            </div>
+            <div id="download-status"></div>
         </div>
-    </div>
-
-    <script>
-        // FIREBASE CONFIGURATION
-        const firebaseConfig = {
-            apiKey: "AIzaSyBpWSHW3fnPUvADjVxKNh5qpJ2lXkJNZRo",
-            authDomain: "vsa-app-13a1f.firebaseapp.com",
-            databaseURL: "https://vsa-app-13a1f-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "vsa-app-13a1f",
-            storageBucket: "vsa-app-13a1f.firebasestorage.app",
-            messagingSenderId: "1090077459793",
-            appId: "1:1090077459793:web:5a3fcaca4923dce511bf70"
-        };
-
-        // Initialize Firebase
-        let app, database, auth;
-        let firebaseInitialized = false;
-
-        try {
-            app = firebase.initializeApp(firebaseConfig);
-            database = firebase.database();
-            auth = firebase.auth();
-            firebaseInitialized = true;
-            console.log('✅ Firebase initialized successfully');
-        } catch (error) {
-            console.error('❌ Firebase initialization error:', error);
-            firebaseInitialized = false;
-        }
-
-        // Global state
-        let vehicleDatabase = [];
-        let currentVehicle = null;
-        let auditResult = null;
-        let currentUser = null;
-
-        // Initialize app
-        document.addEventListener('DOMContentLoaded', function() {
-            setupEventListeners();
-            checkLoginStatus();
-            initializeCollapsibleSections();
-        });
-
-        function setupEventListeners() {
-            document.getElementById('login-form').addEventListener('submit', handleLogin);
-
-            const input = document.getElementById('license-plate-input');
-            input.addEventListener('input', handleAutocomplete);
-            input.addEventListener('keyup', function(e) {
-                if (e.key === 'Enter') {
-                    searchVehicle();
-                }
-            });
-
-            document.addEventListener('click', function(e) {
-                if (!e.target.closest('.autocomplete-wrapper')) {
-                    document.getElementById('autocomplete-list').style.display = 'none';
-                }
-            });
-        }
-
-        // Authentication
-        async function handleLogin(e) {
-            e.preventDefault();
-            const email = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-
-            if (!firebaseInitialized) {
-                document.getElementById('login-error').textContent = 'Firebase not configured. See setup guide.';
-                document.getElementById('login-error').classList.remove('hidden');
-                return;
-            }
-
-            try {
-                showLoading('Authenticating...');
-                
-                const userCredential = await auth.signInWithEmailAndPassword(email, password);
-                
-                currentUser = { 
-                    username: email,
-                    uid: userCredential.user.uid 
-                };
-                
-                document.getElementById('login-error').classList.add('hidden');
-                
-                await loadVehicleDataFromFirebase();
-                
-                hideLoading();
-                showPage('upload-page');
-                updateFirebaseStatus('connected', `Logged in as: ${email}`);
-            } catch (error) {
-                hideLoading();
-                console.error('Authentication error:', error);
-                
-                let errorMessage = 'Login failed. ';
-                switch(error.code) {
-                    case 'auth/invalid-email':
-                        errorMessage += 'Invalid email format.';
-                        break;
-                    case 'auth/user-not-found':
-                        errorMessage += 'No account found with this email.';
-                        break;
-                    case 'auth/wrong-password':
-                        errorMessage += 'Incorrect password.';
-                        break;
-                    case 'auth/invalid-credential':
-                        errorMessage += 'Invalid email or password.';
-                        break;
-                    case 'auth/too-many-requests':
-                        errorMessage += 'Too many failed attempts. Try again later.';
-                        break;
-                    default:
-                        errorMessage += error.message;
-                }
-                
-                document.getElementById('login-error').textContent = errorMessage;
-                document.getElementById('login-error').classList.remove('hidden');
-            }
-        }
-
-        function checkLoginStatus() {
-            if (firebaseInitialized && auth.currentUser) {
-                currentUser = {
-                    username: auth.currentUser.email,
-                    uid: auth.currentUser.uid
-                };
-                loadVehicleDataFromFirebase().then(() => {
-                    showPage('upload-page');
-                    updateFirebaseStatus('connected', `Logged in as: ${auth.currentUser.email}`);
-                });
-            } else {
-                showPage('login-page');
-            }
-        }
-
-        function logout() {
-            if (auth) {
-                auth.signOut();
-            }
-            currentUser = null;
-            vehicleDatabase = [];
-            showPage('login-page');
-        }
-
-        // Firebase Functions
-        async function loadVehicleDataFromFirebase() {
-            try {
-                const snapshot = await database.ref('vehicles').once('value');
-                const data = snapshot.val();
-                
-                if (data && Array.isArray(data)) {
-                    vehicleDatabase = data;
-                    console.log('Loaded', vehicleDatabase.length, 'vehicles from Firebase');
-                    updateDatabaseStats();
-                } else {
-                    vehicleDatabase = [];
-                    console.log('No vehicles in Firebase yet');
-                }
-            } catch (error) {
-                console.error('Error loading from Firebase:', error);
-                updateFirebaseStatus('error', error.message);
-            }
-        }
-
-        async function saveVehicleDataToFirebase() {
-            try {
-                showLoading('Saving to cloud...');
-                await database.ref('vehicles').set(vehicleDatabase);
-                hideLoading();
-                updateFirebaseStatus('connected', `${vehicleDatabase.length} vehicles synced`);
-                return true;
-            } catch (error) {
-                hideLoading();
-                console.error('Error saving to Firebase:', error);
-                updateFirebaseStatus('error', error.message);
-                return false;
-            }
-        }
-
-        async function saveAuditToFirebase(audit) {
-            try {
-                const auditRef = database.ref('audits').push();
-                await auditRef.set(audit);
-                return true;
-            } catch (error) {
-                console.error('Error saving audit:', error);
-                return false;
-            }
-        }
-
-        function updateFirebaseStatus(status, detail = '') {
-            const statusSection = document.getElementById('firebase-status-section');
-            const statusDiv = document.getElementById('firebase-status');
-            const iconSpan = document.getElementById('firebase-icon');
-            const textDiv = document.getElementById('firebase-text');
-            const detailDiv = document.getElementById('firebase-detail');
-
-            statusSection.style.display = 'block';
-            statusDiv.className = 'firebase-status ' + status;
-
-            switch(status) {
-                case 'connected':
-                    iconSpan.textContent = '🟢';
-                    textDiv.textContent = 'Connected to Cloud Database';
-                    textDiv.style.color = '#28a745';
-                    detailDiv.textContent = detail || 'All users share this database';
-                    break;
-                case 'error':
-                    iconSpan.textContent = '🔴';
-                    textDiv.textContent = 'Cloud Connection Error';
-                    textDiv.style.color = '#dc3545';
-                    detailDiv.textContent = detail;
-                    break;
-                case 'syncing':
-                    iconSpan.textContent = '🟡';
-                    textDiv.textContent = 'Syncing...';
-                    textDiv.style.color = '#ffc107';
-                    detailDiv.textContent = detail;
-                    break;
-            }
-        }
-
-        // Page Navigation
-        function showPage(pageId) {
-            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
-            document.getElementById(pageId).classList.add('active');
-
-            clearAllStatusMessages();
-
-            if (pageId === 'upload-page') {
-                updateDatabaseStats();
-            } else if (pageId === 'download-page') {
-                updateReportStats();
-            }
-        }
-
-        function toggleSection(sectionId) {
-            const content = document.getElementById(sectionId + '-content');
-            const icon = document.getElementById(sectionId + '-icon');
-            
-            if (content.classList.contains('hidden')) {
-                content.classList.remove('hidden');
-                icon.classList.remove('collapsed');
-                localStorage.setItem('section-' + sectionId, 'expanded');
-            } else {
-                content.classList.add('hidden');
-                icon.classList.add('collapsed');
-                localStorage.setItem('section-' + sectionId, 'collapsed');
-            }
-        }
-
-        function initializeCollapsibleSections() {
-            const sections = ['firebase-status', 'upload-files'];
-            
-            sections.forEach(sectionId => {
-                const savedState = localStorage.getItem('section-' + sectionId);
-                const content = document.getElementById(sectionId + '-content');
-                const icon = document.getElementById(sectionId + '-icon');
-                
-                if (!content || !icon) return;
-                
-                if (savedState === 'collapsed' || (sectionId === 'upload-files' && !savedState)) {
-                    content.classList.add('hidden');
-                    icon.classList.add('collapsed');
-                } else if (savedState === 'expanded') {
-                    content.classList.remove('hidden');
-                    icon.classList.remove('collapsed');
-                }
-            });
-        }
-
-        function clearAllStatusMessages() {
-            const statusElements = [
-                'upload-status',
-                'clear-status',
-                'download-status'
-            ];
-
-            statusElements.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.style.display = 'none';
-                    element.textContent = '';
-                    element.className = 'status-message';
-                }
-            });
-        }
-
-        // File Upload and Processing
-        let uploadedFiles = {
-            'dive-deep': null,
-            'vin-audit': null,
-            'grounded': null
-        };
-
-        function handleFileSelect(input, fileType) {
-            const file = input.files[0];
-            if (!file) return;
-
-            const fileName = file.name.toLowerCase();
-            let isValid = false;
-            let errorMessage = '';
-
-            switch(fileType) {
-                case 'dive-deep':
-                    const hasDiveDeepKeywords = 
-                        fileName.includes('dive') || fileName.includes('deep') || 
-                        fileName.includes('expected') || fileName.includes('vehicle');
-                    
-                    if (!fileName.endsWith('.csv')) {
-                        errorMessage = '❌ Expected Vehicles file must be a CSV file (.csv)';
-                    } else if (!hasDiveDeepKeywords) {
-                        errorMessage = '❌ File should contain "expected", "vehicle", "dive", or "deep" in name';
-                    } else {
-                        isValid = true;
-                    }
-                    break;
-
-                case 'vin-audit':
-                    const hasVinAuditKeywords = 
-                        fileName.includes('vin') && 
-                        (fileName.includes('audit') || fileName.includes('detail'));
-                    
-                    if (!fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
-                        errorMessage = '❌ VIN Audit file must be an Excel file (.xlsx or .xls)';
-                    } else if (!hasVinAuditKeywords) {
-                        errorMessage = '❌ File should contain "vin" and "audit" or "detail" in name';
-                    } else {
-                        isValid = true;
-                    }
-                    break;
-
-                case 'grounded':
-                    const hasGroundedKeywords = 
-                        fileName.includes('ground') || 
-                        (fileName.includes('current') && fileName.includes('veh'));
-                    
-                    if (!fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
-                        errorMessage = '❌ Grounded file must be an Excel file (.xlsx or .xls)';
-                    } else if (!hasGroundedKeywords) {
-                        errorMessage = '❌ File should contain "ground" or "current veh" in name';
-                    } else {
-                        isValid = true;
-                    }
-                    break;
-            }
-
-            const nameDisplay = document.getElementById(fileType + '-name');
-            
-            if (isValid) {
-                uploadedFiles[fileType] = file;
-                nameDisplay.innerHTML = '✅ ' + file.name;
-                nameDisplay.style.color = '#28a745';
-            } else {
-                uploadedFiles[fileType] = null;
-                input.value = '';
-                nameDisplay.innerHTML = errorMessage;
-                nameDisplay.style.color = '#dc3545';
-                
-                alert(errorMessage + '\n\nFile: ' + file.name + '\n\nPlease select the correct file.');
-            }
-        }
-
-        async function processFiles() {
-            if (!uploadedFiles['dive-deep'] || !uploadedFiles['vin-audit'] || !uploadedFiles['grounded']) {
-                showStatus('upload-status', '⚠️ Please upload all three files. Each file is validated when selected.', 'error');
-                return;
-            }
-
-            const confirmClear = confirm(
-                '⚠️ NEW CYCLE STARTING ⚠️\n\n' +
-                'Uploading new files will:\n' +
-                '• Clear ALL vehicle data\n' +
-                '• Clear ALL audit records\n' +
-                '• Start fresh for new cycle\n\n' +
-                'This affects ALL USERS!\n\n' +
-                'Are you sure you want to continue?'
-            );
-
-            if (!confirmClear) {
-                showStatus('upload-status', 'Upload cancelled by user', 'info');
-                return;
-            }
-
-            showLoading('Clearing old data...');
-
-            try {
-                await database.ref('vehicles').remove();
-                await database.ref('audits').remove();
-                
-                showLoading('Processing files...');
-
-                const diveDeepData = await readCSV(uploadedFiles['dive-deep']);
-                const vinAuditData = await readExcel(uploadedFiles['vin-audit'], 5);
-                const groundedData = await readExcel(uploadedFiles['grounded'], 2);
-
-                buildVehicleDatabase(diveDeepData, vinAuditData, groundedData);
-
-                const saved = await saveVehicleDataToFirebase();
-                
-                hideLoading();
-                
-                if (saved) {
-                    showStatus('upload-status', 
-                        `✅ NEW CYCLE STARTED!\n\n` +
-                        `• Old data cleared\n` +
-                        `• ${vehicleDatabase.length} vehicles uploaded\n` +
-                        `• All users will see new data\n` +
-                        `• Fresh start for new cycle`, 
-                        'success'
-                    );
-                    updateDatabaseStats();
-                    
-                    uploadedFiles = { 'dive-deep': null, 'vin-audit': null, 'grounded': null };
-                    document.getElementById('dive-deep-file').value = '';
-                    document.getElementById('vin-audit-file').value = '';
-                    document.getElementById('grounded-file').value = '';
-                    document.getElementById('dive-deep-name').innerHTML = '';
-                    document.getElementById('vin-audit-name').innerHTML = '';
-                    document.getElementById('grounded-name').innerHTML = '';
-                } else {
-                    showStatus('upload-status', '⚠️ Processed locally but cloud save failed. Check Firebase connection.', 'error');
-                }
-
-            } catch (error) {
-                hideLoading();
-                showStatus('upload-status', 'Error processing files: ' + error.message, 'error');
-                console.error(error);
-            }
-        }
-
-        function readCSV(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const text = e.target.result;
-                    const lines = text.split('\n');
-                    const data = [];
-                    
-                    for (let i = 1; i < lines.length; i++) {
-                        const line = lines[i].trim();
-                        if (line) {
-                            const values = line.split(',');
-                            data.push({
-                                dsp: values[2],
-                                vin: values[4],
-                                licensePlate: values[5],
-                                status: values[6]
-                            });
-                        }
-                    }
-                    resolve(data);
-                };
-                reader.onerror = reject;
-                reader.readAsText(file);
-            });
-        }
-
-        function readExcel(file, skipRows) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    try {
-                        const data = new Uint8Array(e.target.result);
-                        const workbook = XLSX.read(data, { type: 'array' });
-                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { 
-                            header: 1,
-                            defval: null
-                        });
-                        resolve(jsonData.slice(skipRows));
-                    } catch (error) {
-                        reject(error);
-                    }
-                };
-                reader.onerror = reject;
-                reader.readAsArrayBuffer(file);
-            });
-        }
-
-        function buildVehicleDatabase(diveDeep, vinAudit, grounded) {
-            vehicleDatabase = [];
-
-            const vinAuditMap = new Map();
-            vinAudit.forEach(row => {
-                if (row[6]) {
-                    vinAuditMap.set(row[6], row[10]);
-                }
-            });
-
-            const groundedSet = new Set();
-            grounded.forEach(row => {
-                if (row[6]) {
-                    groundedSet.add(row[6]);
-                }
-            });
-
-            diveDeep.forEach(vehicle => {
-                if (vehicle.vin && vehicle.licensePlate) {
-                    vehicleDatabase.push({
-                        vin: vehicle.vin,
-                        licensePlate: vehicle.licensePlate.toUpperCase(),
-                        dsp: vehicle.dsp,
-                        status: vehicle.status,
-                        isGrounded: groundedSet.has(vehicle.vin),
-                        lastAudit: vinAuditMap.get(vehicle.vin) || null
-                    });
-                }
-            });
-
-            console.log('Vehicle database built:', vehicleDatabase.length, 'vehicles');
-        }
-
-        function updateDatabaseStats() {
-            document.getElementById('total-vehicles').textContent = vehicleDatabase.length;
-            document.getElementById('grounded-count').textContent = 
-                vehicleDatabase.filter(v => v.isGrounded).length;
-            document.getElementById('audited-count').textContent = 
-                vehicleDatabase.filter(v => v.lastAudit).length;
-            document.getElementById('to-audit-count').textContent = 
-                vehicleDatabase.filter(v => !v.lastAudit && !v.isGrounded).length;
-            updateAuditProgress();
-        }
-
-        // ── Audit Progress (week-based target) ──
-        function getISOWeek(d) {
-            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-            var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-            return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-        }
-
-        function updateAuditProgress() {
-            const week      = getISOWeek(new Date());
-            const isOdd     = week % 2 !== 0;
-            const target    = isOdd ? 65 : 95;
-            const total     = vehicleDatabase.filter(v => !v.isGrounded).length;
-            const audited   = vehicleDatabase.filter(v => v.lastAudit && !v.isGrounded).length;
-            const pct       = total > 0 ? Math.round((audited / total) * 100) : 0;
-            const needed    = Math.max(0, Math.ceil(target * total / 100) - audited);
-            const targetMet = pct >= target;
-
-            document.getElementById('progress-week-badge').textContent =
-                `Week ${week} (${isOdd ? 'Odd – 1st check' : 'Even – 2nd check'})`;
-
-            document.getElementById('progress-target-badge').innerHTML =
-                `Target: <strong>${target}%</strong>`;
-
-            const fill = document.getElementById('progress-fill');
-            fill.style.width = Math.min(pct, 100) + '%';
-            fill.textContent = pct + '%';
-            fill.className = 'progress-bar-fill ' + (targetMet ? 'met' : 'not-met');
-
-            const marker = document.getElementById('progress-target-marker');
-            marker.style.left = target + '%';
-            marker.setAttribute('data-label', 'Target ' + target + '%');
-
-            document.getElementById('prog-current-pct').textContent = pct + '%';
-            document.getElementById('prog-target-pct').textContent  = target + '%';
-            document.getElementById('prog-audited').textContent     = audited;
-            document.getElementById('prog-total').textContent       = total;
-            document.getElementById('prog-needed').textContent      = needed;
-
-            const neededCard = document.getElementById('prog-needed-card');
-            neededCard.className = 'progress-num-card highlight-needed' + (needed === 0 ? ' zero' : '');
-        }
-
-        // Database Clearing Functions
-        async function clearVehicleDatabase() {
-            const confirm = window.confirm(
-                '⚠️ CLEAR VEHICLE DATABASE ⚠️\n\n' +
-                'This will delete:\n' +
-                '• All vehicle data\n' +
-                '• All license plates\n' +
-                '• All VINs\n\n' +
-                'This affects ALL USERS!\n' +
-                'Audits will NOT be deleted.\n\n' +
-                'Are you sure?'
-            );
-
-            if (!confirm) return;
-
-            try {
-                showLoading('Clearing vehicle database...');
-                
-                await database.ref('vehicles').remove();
-                
-                vehicleDatabase = [];
-                
-                hideLoading();
-                updateDatabaseStats();
-                showStatus('clear-status', '✅ Vehicle database cleared! All users updated.', 'success');
-            } catch (error) {
-                hideLoading();
-                console.error('Error clearing vehicle database:', error);
-                showStatus('clear-status', '❌ Error clearing database: ' + error.message, 'error');
-            }
-        }
-
-        async function clearAuditDatabase() {
-            const confirm = window.confirm(
-                '⚠️ CLEAR AUDIT DATABASE ⚠️\n\n' +
-                'This will delete:\n' +
-                '• All audit records\n' +
-                '• All inspection history\n' +
-                '• All QR codes generated\n\n' +
-                'This affects ALL USERS!\n' +
-                'Vehicle data will NOT be deleted.\n\n' +
-                'Are you sure?'
-            );
-
-            if (!confirm) return;
-
-            try {
-                showLoading('Clearing audit database...');
-                
-                await database.ref('audits').remove();
-                
-                hideLoading();
-                showStatus('clear-status', '✅ Audit database cleared! All users updated.', 'success');
-                
-                if (document.getElementById('download-page').classList.contains('active')) {
-                    updateReportStats();
-                }
-            } catch (error) {
-                hideLoading();
-                console.error('Error clearing audit database:', error);
-                showStatus('clear-status', '❌ Error clearing database: ' + error.message, 'error');
-            }
-        }
-
-        async function clearAllDatabases() {
-            const confirm = window.confirm(
-                '⚠️⚠️⚠️ CLEAR EVERYTHING ⚠️⚠️⚠️\n\n' +
-                'This will delete:\n' +
-                '• ALL vehicle data\n' +
-                '• ALL audit records\n' +
-                '• EVERYTHING in the system\n\n' +
-                'This affects ALL USERS!\n' +
-                'Cannot be undone!\n\n' +
-                'Are you ABSOLUTELY sure?'
-            );
-
-            if (!confirm) return;
-
-            const doubleConfirm = window.confirm(
-                'FINAL CONFIRMATION\n\n' +
-                'This will permanently delete all data.\n' +
-                'Type YES in the next prompt to confirm.'
-            );
-
-            if (!doubleConfirm) return;
-
-            const typedConfirmation = prompt('Type "DELETE ALL" to confirm (case sensitive):');
-            
-            if (typedConfirmation !== 'DELETE ALL') {
-                alert('Confirmation failed. No data was deleted.');
-                showStatus('clear-status', 'Clear cancelled - wrong confirmation text', 'info');
-                return;
-            }
-
-            try {
-                showLoading('Clearing all databases...');
-                
-                await database.ref('vehicles').remove();
-                await database.ref('audits').remove();
-                
-                vehicleDatabase = [];
-                
-                hideLoading();
-                updateDatabaseStats();
-                showStatus('clear-status', '✅ All databases cleared! System reset complete. All users updated.', 'success');
-                
-                if (document.getElementById('download-page').classList.contains('active')) {
-                    updateReportStats();
-                }
-            } catch (error) {
-                hideLoading();
-                console.error('Error clearing databases:', error);
-                showStatus('clear-status', '❌ Error clearing databases: ' + error.message, 'error');
-            }
-        }
-
-        // Autocomplete
-        function handleAutocomplete() {
-            const input = document.getElementById('license-plate-input');
-            const value = input.value.toUpperCase();
-            const list = document.getElementById('autocomplete-list');
-
-            if (value.length > 0) {
-                document.getElementById('qr-overlay').classList.remove('show');
-            }
-
-            if (value.length < 2) {
-                list.style.display = 'none';
-                return;
-            }
-
-            const matches = vehicleDatabase.filter(v => 
-                v.licensePlate.includes(value)
-            ).slice(0, 10);
-
-            if (matches.length === 0) {
-                list.style.display = 'none';
-                return;
-            }
-
-            list.innerHTML = matches.map(v => `
-                <div class="autocomplete-item" onclick="selectVehicle('${v.licensePlate}')">
-                    <strong>${v.licensePlate}</strong> - ${v.dsp} - VIN: ${v.vin.substr(-6)}
-                </div>
-            `).join('');
-
-            list.style.display = 'block';
-        }
-
-        function selectVehicle(licensePlate) {
-            document.getElementById('license-plate-input').value = licensePlate;
-            document.getElementById('autocomplete-list').style.display = 'none';
-            searchVehicle();
-        }
-
-        function searchVehicle() {
-            const plate = document.getElementById('license-plate-input').value.toUpperCase().trim();
-            if (!plate) return;
-
-            const vehicle = vehicleDatabase.find(v => v.licensePlate === plate);
-            if (!vehicle) {
-                alert('Vehicle not found in database');
-                return;
-            }
-
-            currentVehicle = vehicle;
-            displayVehicleInfo(vehicle);
-        }
-
-        function displayVehicleInfo(vehicle) {
-            document.getElementById('info-plate').textContent = vehicle.licensePlate;
-            document.getElementById('info-vin').textContent   = vehicle.vin;
-            document.getElementById('info-dsp').textContent   = vehicle.dsp;
-
-            document.getElementById('grounded-warning').style.display = vehicle.isGrounded ? 'block' : 'none';
-
-            document.getElementById('info-status').innerHTML = vehicle.isGrounded
-                ? '<span class="status-badge badge-grounded">GROUNDED</span>'
-                : '<span class="status-badge badge-active">ACTIVE</span>';
-
-            const box   = document.getElementById('last-audit-box');
-            const label = box.querySelector('.info-label');
-            const value = document.getElementById('info-last-audit');
-
-            box.classList.remove('needs-vsa', 'already-audited');
-            if (vehicle.lastAudit) {
-                box.classList.add('already-audited');
-                label.innerHTML = '✅ Last Audit';
-                value.textContent = vehicle.lastAudit;
-            } else {
-                box.classList.add('needs-vsa');
-                label.innerHTML = '⚠️ Last Audit';
-                value.textContent = 'VSA REQUIRED';
-            }
-
-            document.getElementById('vehicle-info-card').classList.add('show');
-            document.getElementById('problem-card').classList.remove('show');
-            document.getElementById('autocomplete-list').style.display = 'none';
-        }
-
-        function resetAudit() {
-            document.getElementById('qr-overlay').classList.remove('show');
-            document.getElementById('vehicle-info-card').classList.remove('show');
-            document.getElementById('problem-card').classList.remove('show');
-            currentVehicle = null;
-            auditResult    = null;
-            document.getElementById('license-plate-input').value = '';
-            document.getElementById('problem-description').value = '';
-            document.getElementById('license-plate-input').focus();
-        }
-
-        // ── Audit decisions ──
-        function vanOK() {
-            if (!currentVehicle) return;
-            auditResult = { result: 'PASSED', problem: null };
-            document.getElementById('problem-card').classList.remove('show');
-            showQROverlay();
-        }
-
-        function vsaBlock() {
-            if (!currentVehicle) return;
-            document.getElementById('problem-card').classList.add('show');
-            setTimeout(() => {
-                document.getElementById('problem-card').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }, 60);
-        }
-
-        function submitProblem() {
-            const problem = document.getElementById('problem-description').value.trim();
-            if (!problem) {
-                alert('Please describe the problem');
-                return;
-            }
-            auditResult = { result: 'FAILED', problem: problem };
-            showQROverlay();
-        }
-
-        // ── QR Overlay ──
-        function showQROverlay() {
-            const qrDiv = document.getElementById('qr-code');
-            qrDiv.innerHTML = '';
-
-            // QR code contains ONLY the VIN
-            const qrText = currentVehicle.vin;
-            const now = new Date();
-
-            new QRCode(qrDiv, {
-                text:           qrText,
-                width:          280,
-                height:         280,
-                colorDark:      '#000000',
-                colorLight:     '#ffffff',
-                correctLevel:   QRCode.CorrectLevel.H
-            });
-
-            // ── Update overlay UI ──
-            const passed = auditResult.result === 'PASSED';
-            const title  = document.getElementById('qr-overlay-title');
-            title.textContent = passed ? '✅ Van OK' : '❌ VSA Blocked';
-            title.className   = 'qr-overlay-title ' + (passed ? 'passed' : 'failed');
-
-            document.getElementById('qr-overlay-info').innerHTML =
-                `<strong>${currentVehicle.licensePlate}</strong> · ${currentVehicle.dsp}<br>` +
-                `VIN: ${currentVehicle.vin}<br>` +
-                `Status: ${currentVehicle.isGrounded ? '🚫 GROUNDED' : '✅ ACTIVE'}<br>` +
-                `Last Audit: ${currentVehicle.lastAudit || 'None'}<br>` +
-                `Auditor: ${currentUser ? currentUser.username : 'unknown'}<br>` +
-                `Date: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}` +
-                (auditResult.problem
-                    ? `<br><span style="color:#dc3545;">Problem: ${auditResult.problem}</span>`
-                    : '');
-
-            document.getElementById('qr-overlay').classList.add('show');
-        }
-
-        // ── Save ──
-        async function saveAudit() {
-            if (!currentVehicle || !auditResult) return;
-
-            const audit = {
-                id:            Date.now(),
-                vin:           currentVehicle.vin,
-                licensePlate:  currentVehicle.licensePlate,
-                dsp:           currentVehicle.dsp,
-                result:        auditResult.result,
-                problem:       auditResult.problem,
-                timestamp:     new Date().toISOString(),
-                date:          new Date().toLocaleDateString(),
-                time:          new Date().toLocaleTimeString(),
-                user:          currentUser ? currentUser.username : 'unknown'
-            };
-
-            const saved = await saveAuditToFirebase(audit);
-            if (!saved) alert('⚠️ Cloud save failed — check connection.');
-
-            const v = vehicleDatabase.find(x => x.licensePlate === currentVehicle.licensePlate);
-            if (v) v.lastAudit = audit.date;
-            updateDatabaseStats();
-
-            resetAudit();
-        }
-
-        // Reports
-        async function updateReportStats() {
-            try {
-                const snapshot = await database.ref('audits').once('value');
-                const audits = [];
-                snapshot.forEach(child => {
-                    audits.push(child.val());
-                });
-
-                const today = new Date().toLocaleDateString();
-
-                document.getElementById('report-total-audits').textContent = audits.length;
-                document.getElementById('report-passed').textContent = 
-                    audits.filter(a => a.result === 'PASSED').length;
-                document.getElementById('report-failed').textContent = 
-                    audits.filter(a => a.result === 'FAILED').length;
-                document.getElementById('report-today').textContent = 
-                    audits.filter(a => a.date === today).length;
-            } catch (error) {
-                console.error('Error loading audit stats:', error);
-            }
-        }
-
-        async function downloadAllAudits() {
-            await downloadAudits('all');
-        }
-
-        async function downloadPassedOnly() {
-            await downloadAudits('passed');
-        }
-
-        async function downloadFailedOnly() {
-            await downloadAudits('failed');
-        }
-
-        async function downloadAudits(type) {
-            try {
-                showLoading('Loading audit data...');
-                
-                const snapshot = await database.ref('audits').once('value');
-                let audits = [];
-                snapshot.forEach(child => {
-                    audits.push(child.val());
-                });
-
-                if (type === 'passed') {
-                    audits = audits.filter(a => a.result === 'PASSED');
-                } else if (type === 'failed') {
-                    audits = audits.filter(a => a.result === 'FAILED');
-                }
-
-                hideLoading();
-
-                if (audits.length === 0) {
-                    alert('No audits to download');
-                    return;
-                }
-
-                const headers = ['ID', 'Date', 'Time', 'License Plate', 'VIN', 'DSP', 'Result', 'Problem', 'User'];
-                const rows = audits.map(a => [
-                    a.id,
-                    a.date,
-                    a.time,
-                    a.licensePlate,
-                    a.vin,
-                    a.dsp,
-                    a.result,
-                    a.problem || '',
-                    a.user || ''
-                ]);
-
-                const csv = [headers, ...rows].map(row => 
-                    row.map(cell => `"${cell}"`).join(',')
-                ).join('\n');
-
-                const blob = new Blob([csv], { type: 'text/csv' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `vsa_audits_${type}_${new Date().toISOString().split('T')[0]}.csv`;
-                a.click();
-
-                showStatus('download-status', `Downloaded ${audits.length} audit records`, 'success');
-            } catch (error) {
-                hideLoading();
-                console.error('Error downloading audits:', error);
-                alert('Error downloading audits: ' + error.message);
-            }
-        }
-
-        // Utility Functions
-        let statusTimers = {};
-
-        function showStatus(elementId, message, type) {
-            const element = document.getElementById(elementId);
-            element.className = 'status-message status-' + type;
-            element.innerHTML = message.replace(/\n/g, '<br>');
-            element.style.display = 'block';
-
-            if (statusTimers[elementId]) {
-                clearTimeout(statusTimers[elementId]);
-            }
-
-            if (type === 'success' || type === 'info') {
-                statusTimers[elementId] = setTimeout(() => {
-                    element.style.transition = 'opacity 0.5s';
-                    element.style.opacity = '0';
-                    
-                    setTimeout(() => {
-                        element.style.display = 'none';
-                        element.style.opacity = '1';
-                        element.style.transition = '';
-                    }, 500);
-                }, 5000);
-            }
-        }
-
-        function showLoading(text) {
-            document.getElementById('loading-text').textContent = text;
-            document.getElementById('loading-overlay').classList.add('show');
-        }
-
-        function hideLoading() {
-            document.getElementById('loading-overlay').classList.remove('show');
-        }
-
-        // ============================================================
-        // MODAL — shared state
-        // ============================================================
-        let currentModalData = [];
-        let currentModalType = '';
-        let modalSortCol = null;
-        let modalSortDir = 'asc';
-
-        function closeModal() {
-            document.getElementById('data-modal').classList.remove('show');
-        }
-
-        // ============================================================
-        // VEHICLE MODAL
-        // ============================================================
-        function viewVehicleData(type) {
-            let data = [];
-            let title = '';
-
-            switch(type) {
-                case 'active':
-                    data = vehicleDatabase.slice();
-                    title = 'All Active Vehicles';
-                    break;
-                case 'grounded':
-                    data = vehicleDatabase.filter(v => v.isGrounded);
-                    title = 'Grounded Vehicles';
-                    break;
-                case 'audited':
-                    data = vehicleDatabase.filter(v => v.lastAudit);
-                    title = 'Already Audited Vehicles';
-                    break;
-                case 'to-audit':
-                    data = vehicleDatabase.filter(v => !v.lastAudit && !v.isGrounded);
-                    title = '🚐 Vans To Be Audited';
-                    break;
-            }
-
-            if (data.length === 0) {
-                showModalEmpty(title, 'No vehicles found in this category.');
-                return;
-            }
-
-            currentModalData = data;
-            currentModalType = 'vehicle';
-            modalSortCol = null;
-            modalSortDir = 'asc';
-            document.getElementById('modal-title').textContent = title;
-
-            const dspSet = [...new Set(data.map(v => v.dsp))].sort();
-
-            const toolbar = `
-                <div class="modal-toolbar">
-                    <input class="search-input" type="text" id="v-search" placeholder="🔍 Search plate / VIN…" oninput="renderVehicleTable()">
-                    <div class="toolbar-group">
-                        <span class="toolbar-label">DSP</span>
-                        <div class="ms-wrap" id="v-dsp">
-                            ${dspSet.map(d => `<button class="ms-pill" data-val="${d}" onclick="togglePill(this,'renderVehicleTable')">${d}</button>`).join('')}
-                        </div>
-                    </div>
-                    <div class="toolbar-group">
-                        <span class="toolbar-label">Status</span>
-                        <div class="ms-wrap" id="v-status">
-                            <button class="ms-pill" data-val="active"     onclick="togglePill(this,'renderVehicleTable')">Active</button>
-                            <button class="ms-pill" data-val="grounded"   onclick="togglePill(this,'renderVehicleTable')">Grounded</button>
-                            <button class="ms-pill" data-val="audited"    onclick="togglePill(this,'renderVehicleTable')">Audited</button>
-                            <button class="ms-pill" data-val="not-audited" onclick="togglePill(this,'renderVehicleTable')">Not Audited</button>
-                        </div>
-                    </div>
-                    <span class="modal-count" id="v-count">${data.length} vehicles</span>
-                </div>
-                <div id="v-table"></div>
-            `;
-
-            document.getElementById('modal-body').innerHTML = toolbar;
-            renderVehicleTable();
-            document.getElementById('data-modal').classList.add('show');
-        }
-
-        function renderVehicleTable() {
-            const search   = document.getElementById('v-search').value.toLowerCase();
-            const dsps     = getSelectedPills('v-dsp');
-            const statuses = getSelectedPills('v-status');
-
-            let filtered = currentModalData.filter(v => {
-                if (search && !v.licensePlate.toLowerCase().includes(search) && !v.vin.toLowerCase().includes(search)) return false;
-                if (dsps.length && !dsps.includes(v.dsp)) return false;
-                if (statuses.length) {
-                    const match = statuses.some(s => {
-                        if (s === 'active')      return !v.isGrounded;
-                        if (s === 'grounded')    return  v.isGrounded;
-                        if (s === 'audited')     return !!v.lastAudit;
-                        if (s === 'not-audited') return !v.lastAudit;
-                        return false;
-                    });
-                    if (!match) return false;
-                }
-                return true;
-            });
-
-            if (modalSortCol) {
-                filtered.sort((a, b) => {
-                    let valA = getVehicleSortVal(a, modalSortCol);
-                    let valB = getVehicleSortVal(b, modalSortCol);
-                    if (valA < valB) return modalSortDir === 'asc' ? -1 : 1;
-                    if (valA > valB) return modalSortDir === 'asc' ?  1 : -1;
-                    return 0;
-                });
-            }
-
-            document.getElementById('v-count').textContent = filtered.length + ' vehicles';
-
-            const cols = [
-                { key: 'licensePlate', label: 'License Plate' },
-                { key: 'vin',          label: 'VIN' },
-                { key: 'dsp',          label: 'DSP' },
-                { key: 'status',       label: 'Status' },
-                { key: 'lastAudit',    label: 'Last Audit' }
-            ];
-
-            const headerHTML = cols.map(c => {
-                let arrow = '';
-                let cls = '';
-                if (modalSortCol === c.key) {
-                    arrow = modalSortDir === 'asc' ? '▲' : '▼';
-                    cls = ' class="active-sort"';
-                }
-                return `<th${cls} onclick="sortVehicle('${c.key}')">${c.label}<span class="sort-arrow">${arrow || '⇅'}</span></th>`;
-            }).join('');
-
-            const bodyHTML = filtered.map(v => `
-                <tr>
-                    <td><strong>${v.licensePlate}</strong></td>
-                    <td>${v.vin}</td>
-                    <td>${v.dsp}</td>
-                    <td>${v.isGrounded
-                        ? '<span class="status-badge-table badge-grounded-table">GROUNDED</span>'
-                        : '<span class="status-badge-table badge-active-table">ACTIVE</span>'}</td>
-                    <td>${v.lastAudit || '—'}</td>
-                </tr>
-            `).join('');
-
-            document.getElementById('v-table').innerHTML = `
-                <table class="data-table">
-                    <thead><tr>${headerHTML}</tr></thead>
-                    <tbody>${bodyHTML || '<tr><td colspan="5" style="text-align:center;color:#aaa;padding:30px;">No matching vehicles</td></tr>'}</tbody>
-                </table>
-            `;
-        }
-
-        function getVehicleSortVal(v, col) {
-            switch(col) {
-                case 'licensePlate': return v.licensePlate.toLowerCase();
-                case 'vin':          return v.vin.toLowerCase();
-                case 'dsp':          return v.dsp.toLowerCase();
-                case 'status':       return v.isGrounded ? 'grounded' : 'active';
-                case 'lastAudit':    return v.lastAudit || '';
-                default: return '';
-            }
-        }
-
-        function sortVehicle(col) {
-            if (modalSortCol === col) {
-                modalSortDir = modalSortDir === 'asc' ? 'desc' : 'asc';
-            } else {
-                modalSortCol = col;
-                modalSortDir = 'asc';
-            }
-            renderVehicleTable();
-        }
-
-        // ============================================================
-        // AUDIT MODAL
-        // ============================================================
-        async function viewAuditData(type) {
-            try {
-                showLoading('Loading audit data…');
-
-                const snapshot = await database.ref('audits').once('value');
-                let audits = [];
-                snapshot.forEach(child => { audits.push(child.val()); });
-
-                let data = [];
-                let title = '';
-                const today = new Date().toLocaleDateString();
-
-                switch(type) {
-                    case 'all':
-                        data = audits;
-                        title = 'All Audits';
-                        break;
-                    case 'passed':
-                        data = audits.filter(a => a.result === 'PASSED');
-                        title = 'Passed Audits';
-                        break;
-                    case 'failed':
-                        data = audits.filter(a => a.result === 'FAILED');
-                        title = 'Failed Audits';
-                        break;
-                    case 'today':
-                        data = audits.filter(a => a.date === today);
-                        title = "Today's Audits";
-                        break;
-                }
-
-                hideLoading();
-
-                if (data.length === 0) {
-                    showModalEmpty(title, 'No audits found in this category.');
-                    return;
-                }
-
-                currentModalData = data;
-                currentModalType = 'audit';
-                modalSortCol = null;
-                modalSortDir = 'asc';
-                document.getElementById('modal-title').textContent = title;
-
-                const dspSet  = [...new Set(data.map(a => a.dsp))].sort();
-                const userSet = [...new Set(data.map(a => a.user || 'Unknown'))].sort();
-
-                const toolbar = `
-                    <div class="modal-toolbar">
-                        <input class="search-input" type="text" id="a-search" placeholder="🔍 Search plate / VIN…" oninput="renderAuditTable()">
-                        <div class="toolbar-group">
-                            <span class="toolbar-label">Result</span>
-                            <div class="ms-wrap" id="a-result">
-                                <button class="ms-pill" data-val="PASSED" onclick="togglePill(this,'renderAuditTable')">Passed</button>
-                                <button class="ms-pill" data-val="FAILED" onclick="togglePill(this,'renderAuditTable')">Failed</button>
-                            </div>
-                        </div>
-                        <div class="toolbar-group">
-                            <span class="toolbar-label">DSP</span>
-                            <div class="ms-wrap" id="a-dsp">
-                                ${dspSet.map(d => `<button class="ms-pill" data-val="${d}" onclick="togglePill(this,'renderAuditTable')">${d}</button>`).join('')}
-                            </div>
-                        </div>
-                        <div class="toolbar-group">
-                            <span class="toolbar-label">User</span>
-                            <div class="ms-wrap" id="a-user">
-                                ${userSet.map(u => `<button class="ms-pill" data-val="${u}" onclick="togglePill(this,'renderAuditTable')">${u}</button>`).join('')}
-                            </div>
-                        </div>
-                        <span class="modal-count" id="a-count">${data.length} audits</span>
-                    </div>
-                    <div id="a-table"></div>
-                `;
-
-                document.getElementById('modal-body').innerHTML = toolbar;
-                renderAuditTable();
-                document.getElementById('data-modal').classList.add('show');
-
-            } catch (error) {
-                hideLoading();
-                console.error('Error loading audit data:', error);
-                alert('Error loading audit data: ' + error.message);
-            }
-        }
-
-        function renderAuditTable() {
-            const search  = document.getElementById('a-search').value.toLowerCase();
-            const results = getSelectedPills('a-result');
-            const dsps    = getSelectedPills('a-dsp');
-            const users   = getSelectedPills('a-user');
-
-            let filtered = currentModalData.filter(a => {
-                if (search  && !a.licensePlate.toLowerCase().includes(search) && !a.vin.toLowerCase().includes(search)) return false;
-                if (results.length && !results.includes(a.result)) return false;
-                if (dsps.length   && !dsps.includes(a.dsp)) return false;
-                if (users.length  && !users.includes(a.user || 'Unknown')) return false;
-                return true;
-            });
-
-            if (modalSortCol) {
-                filtered.sort((a, b) => {
-                    let valA = getAuditSortVal(a, modalSortCol);
-                    let valB = getAuditSortVal(b, modalSortCol);
-                    if (valA < valB) return modalSortDir === 'asc' ? -1 : 1;
-                    if (valA > valB) return modalSortDir === 'asc' ?  1 : -1;
-                    return 0;
-                });
-            }
-
-            document.getElementById('a-count').textContent = filtered.length + ' audits';
-
-            const cols = [
-                { key: 'date',         label: 'Date' },
-                { key: 'time',         label: 'Time' },
-                { key: 'licensePlate', label: 'License Plate' },
-                { key: 'vin',          label: 'VIN' },
-                { key: 'dsp',          label: 'DSP' },
-                { key: 'result',       label: 'Result' },
-                { key: 'problem',      label: 'Problem' },
-                { key: 'user',         label: 'User' }
-            ];
-
-            const headerHTML = cols.map(c => {
-                let arrow = '';
-                let cls = '';
-                if (modalSortCol === c.key) {
-                    arrow = modalSortDir === 'asc' ? '▲' : '▼';
-                    cls = ' class="active-sort"';
-                }
-                return `<th${cls} onclick="sortAudit('${c.key}')">${c.label}<span class="sort-arrow">${arrow || '⇅'}</span></th>`;
-            }).join('');
-
-            const bodyHTML = filtered.map(a => `
-                <tr>
-                    <td>${a.date}</td>
-                    <td>${a.time}</td>
-                    <td><strong>${a.licensePlate}</strong></td>
-                    <td>${a.vin}</td>
-                    <td>${a.dsp}</td>
-                    <td>${a.result === 'PASSED'
-                        ? '<span class="status-badge-table badge-passed-table">PASSED</span>'
-                        : '<span class="status-badge-table badge-failed-table">FAILED</span>'}</td>
-                    <td>${a.problem || '—'}</td>
-                    <td>${a.user || 'Unknown'}</td>
-                </tr>
-            `).join('');
-
-            document.getElementById('a-table').innerHTML = `
-                <table class="data-table">
-                    <thead><tr>${headerHTML}</tr></thead>
-                    <tbody>${bodyHTML || '<tr><td colspan="8" style="text-align:center;color:#aaa;padding:30px;">No matching audits</td></tr>'}</tbody>
-                </table>
-            `;
-        }
-
-        function getAuditSortVal(a, col) {
-            switch(col) {
-                case 'date':         return a.date || '';
-                case 'time':         return a.time || '';
-                case 'licensePlate': return a.licensePlate.toLowerCase();
-                case 'vin':          return a.vin.toLowerCase();
-                case 'dsp':          return a.dsp.toLowerCase();
-                case 'result':       return a.result || '';
-                case 'problem':      return (a.problem || '').toLowerCase();
-                case 'user':         return (a.user || 'unknown').toLowerCase();
-                default: return '';
-            }
-        }
-
-        function sortAudit(col) {
-            if (modalSortCol === col) {
-                modalSortDir = modalSortDir === 'asc' ? 'desc' : 'asc';
-            } else {
-                modalSortCol = col;
-                modalSortDir = 'asc';
-            }
-            renderAuditTable();
-        }
-
-        // ============================================================
-        // EMPTY STATE
-        // ============================================================
-        function showModalEmpty(title, message) {
-            document.getElementById('modal-title').textContent = title;
-            document.getElementById('modal-body').innerHTML = `
-                <div class="empty-data"><p>${message}</p></div>
-            `;
-            document.getElementById('data-modal').classList.add('show');
-        }
-
-        // ============================================================
-        // EXPORT
-        // ============================================================
-        function exportModalData() {
-            const rows = document.querySelectorAll('.data-table tbody tr');
-            if (rows.length === 0) { alert('No data to export.'); return; }
-
-            const modalTitle = document.getElementById('modal-title').textContent;
-            const date = new Date().toISOString().split('T')[0];
-            let csv = '', filename = '';
-
-            if (currentModalType === 'vehicle') {
-                filename = `vehicles_${modalTitle.toLowerCase().replace(/[^a-z0-9]/g,'_')}_${date}.csv`;
-                const headers = ['License Plate','VIN','DSP','Status','Last Audit'];
-                const search   = document.getElementById('v-search').value.toLowerCase();
-                const dsps     = getSelectedPills('v-dsp');
-                const statuses = getSelectedPills('v-status');
-                let filtered = currentModalData.filter(v => {
-                    if (search && !v.licensePlate.toLowerCase().includes(search) && !v.vin.toLowerCase().includes(search)) return false;
-                    if (dsps.length && !dsps.includes(v.dsp)) return false;
-                    if (statuses.length) {
-                        const match = statuses.some(s => {
-                            if (s === 'active')      return !v.isGrounded;
-                            if (s === 'grounded')    return  v.isGrounded;
-                            if (s === 'audited')     return !!v.lastAudit;
-                            if (s === 'not-audited') return !v.lastAudit;
-                            return false;
-                        });
-                        if (!match) return false;
-                    }
-                    return true;
-                });
-                const dataRows = filtered.map(v => [v.licensePlate, v.vin, v.dsp, v.isGrounded?'GROUNDED':'ACTIVE', v.lastAudit||'']);
-                csv = [headers,...dataRows].map(r => r.map(c=>`"${c}"`).join(',')).join('\n');
-            } else {
-                filename = `audits_${modalTitle.toLowerCase().replace(/[^a-z0-9]/g,'_')}_${date}.csv`;
-                const headers = ['Date','Time','License Plate','VIN','DSP','Result','Problem','User'];
-                const search  = document.getElementById('a-search').value.toLowerCase();
-                const results = getSelectedPills('a-result');
-                const dsps    = getSelectedPills('a-dsp');
-                const users   = getSelectedPills('a-user');
-                let filtered = currentModalData.filter(a => {
-                    if (search  && !a.licensePlate.toLowerCase().includes(search) && !a.vin.toLowerCase().includes(search)) return false;
-                    if (results.length && !results.includes(a.result)) return false;
-                    if (dsps.length   && !dsps.includes(a.dsp)) return false;
-                    if (users.length  && !users.includes(a.user || 'Unknown')) return false;
-                    return true;
-                });
-                const dataRows = filtered.map(a => [a.date, a.time, a.licensePlate, a.vin, a.dsp, a.result, a.problem||'', a.user||'']);
-                csv = [headers,...dataRows].map(r => r.map(c=>`"${c}"`).join(',')).join('\n');
-            }
-
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url  = URL.createObjectURL(blob);
-            const a    = document.createElement('a');
-            a.href     = url;
-            a.download = filename;
-            a.click();
-        }
-
-        // ── Multi-select pill helpers ──
-        function togglePill(btn, rerenderFn) {
-            btn.classList.toggle('on');
-            if (typeof window[rerenderFn] === 'function') window[rerenderFn]();
-        }
-
-        function getSelectedPills(containerId) {
-            const container = document.getElementById(containerId);
-            if (!container) return [];
-            return [...container.querySelectorAll('.ms-pill.on')].map(b => b.dataset.val);
-        }
-
-        // Close modal when clicking backdrop
-        document.addEventListener('click', function(e) {
-            if (e.target === document.getElementById('data-modal')) closeModal();
-        });
-    </script>
+    </div></div>
+
+    <!-- DATA VIEW MODAL -->
+    <div class="modal" id="data-modal"><div class="modal-content">
+        <div class="modal-header"><h2 id="modal-title">Data View</h2><button class="modal-close" onclick="closeModal()">✕ Close</button></div>
+        <div id="modal-body"></div>
+        <div class="modal-actions"><button onclick="exportModalData()" class="btn btn-success">📥 Export to CSV</button></div>
+    </div></div>
+
+<script>
+// ================================================================
+// FIREBASE
+// ================================================================
+const firebaseConfig={apiKey:"AIzaSyBpWSHW3fnPUvADjVxKNh5qpJ2lXkJNZRo",authDomain:"vsa-app-13a1f.firebaseapp.com",databaseURL:"https://vsa-app-13a1f-default-rtdb.europe-west1.firebasedatabase.app",projectId:"vsa-app-13a1f",storageBucket:"vsa-app-13a1f.firebasestorage.app",messagingSenderId:"1090077459793",appId:"1:1090077459793:web:5a3fcaca4923dce511bf70"};
+let app,database,auth,firebaseInitialized=false;
+try{app=firebase.initializeApp(firebaseConfig);database=firebase.database();auth=firebase.auth();firebaseInitialized=true;}catch(e){console.error(e);}
+
+let vehicleDatabase=[],currentVehicle=null,auditResult=null,currentUser=null;
+
+document.addEventListener('DOMContentLoaded',function(){
+    setupEventListeners();checkLoginStatus();initializeCollapsibleSections();
+});
+
+function setupEventListeners(){
+    document.getElementById('login-form').addEventListener('submit',handleLogin);
+    const inp=document.getElementById('license-plate-input');
+    inp.addEventListener('input',handleAutocomplete);
+    inp.addEventListener('keyup',function(e){if(e.key==='Enter')searchVehicle();});
+    document.addEventListener('click',function(e){if(!e.target.closest('.autocomplete-wrapper'))document.getElementById('autocomplete-list').style.display='none';});
+}
+
+// AUTH
+async function handleLogin(e){
+    e.preventDefault();
+    const email=document.getElementById('username').value,pw=document.getElementById('password').value;
+    if(!firebaseInitialized){document.getElementById('login-error').textContent='Firebase not configured.';document.getElementById('login-error').classList.remove('hidden');return;}
+    try{
+        showLoading('Authenticating...');
+        const cred=await auth.signInWithEmailAndPassword(email,pw);
+        currentUser={username:email,uid:cred.user.uid};
+        document.getElementById('login-error').classList.add('hidden');
+        await loadVehicleDataFromFirebase();hideLoading();
+        showPage('upload-page');updateFirebaseStatus('connected','Logged in as: '+email);
+    }catch(error){
+        hideLoading();
+        let msg='Login failed. ';
+        switch(error.code){case'auth/invalid-email':msg+='Invalid email.';break;case'auth/user-not-found':msg+='No account.';break;case'auth/wrong-password':msg+='Wrong password.';break;case'auth/invalid-credential':msg+='Invalid credentials.';break;case'auth/too-many-requests':msg+='Too many attempts.';break;default:msg+=error.message;}
+        document.getElementById('login-error').textContent=msg;document.getElementById('login-error').classList.remove('hidden');
+    }
+}
+function checkLoginStatus(){
+    if(firebaseInitialized&&auth.currentUser){currentUser={username:auth.currentUser.email,uid:auth.currentUser.uid};loadVehicleDataFromFirebase().then(()=>{showPage('upload-page');updateFirebaseStatus('connected','Logged in as: '+auth.currentUser.email);});}
+    else showPage('login-page');
+}
+function logout(){if(auth)auth.signOut();currentUser=null;vehicleDatabase=[];showPage('login-page');}
+
+// FIREBASE DATA
+async function loadVehicleDataFromFirebase(){
+    try{const s=await database.ref('vehicles').once('value');const d=s.val();vehicleDatabase=(d&&Array.isArray(d))?d:[];updateDatabaseStats();}
+    catch(e){console.error(e);updateFirebaseStatus('error',e.message);}
+}
+async function saveVehicleDataToFirebase(){
+    try{showLoading('Saving...');await database.ref('vehicles').set(vehicleDatabase);hideLoading();updateFirebaseStatus('connected',vehicleDatabase.length+' vehicles synced');return true;}
+    catch(e){hideLoading();updateFirebaseStatus('error',e.message);return false;}
+}
+async function saveAuditToFirebase(audit){try{await database.ref('audits').push().set(audit);return true;}catch(e){console.error(e);return false;}}
+
+function updateFirebaseStatus(status,detail=''){
+    document.getElementById('firebase-status-section').style.display='block';
+    document.getElementById('firebase-status').className='firebase-status '+status;
+    const i=document.getElementById('firebase-icon'),t=document.getElementById('firebase-text'),d=document.getElementById('firebase-detail');
+    if(status==='connected'){i.textContent='🟢';t.textContent='Connected to Cloud Database';t.style.color='#28a745';d.textContent=detail||'All users share this database';}
+    else if(status==='error'){i.textContent='🔴';t.textContent='Cloud Connection Error';t.style.color='#dc3545';d.textContent=detail;}
+    else{i.textContent='🟡';t.textContent='Syncing...';t.style.color='#ffc107';d.textContent=detail;}
+}
+
+// NAV
+function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active');clearAllStatusMessages();if(id==='upload-page')updateDatabaseStats();else if(id==='download-page')updateReportStats();}
+function toggleSection(id){const c=document.getElementById(id+'-content'),i=document.getElementById(id+'-icon');if(c.classList.contains('hidden')){c.classList.remove('hidden');i.classList.remove('collapsed');localStorage.setItem('section-'+id,'expanded');}else{c.classList.add('hidden');i.classList.add('collapsed');localStorage.setItem('section-'+id,'collapsed');}}
+function initializeCollapsibleSections(){['firebase-status','upload-files'].forEach(id=>{const s=localStorage.getItem('section-'+id),c=document.getElementById(id+'-content'),i=document.getElementById(id+'-icon');if(!c||!i)return;if(s==='collapsed'||(id==='upload-files'&&!s)){c.classList.add('hidden');i.classList.add('collapsed');}else if(s==='expanded'){c.classList.remove('hidden');i.classList.remove('collapsed');}});}
+function clearAllStatusMessages(){['upload-status','clear-status','download-status'].forEach(id=>{const el=document.getElementById(id);if(el){el.style.display='none';el.textContent='';el.className='status-message';}});}
+
+// FILE UPLOAD
+let uploadedFiles={'dive-deep':null,'vin-audit':null,'grounded':null};
+function handleFileSelect(input,type){
+    const file=input.files[0];if(!file)return;const fn=file.name.toLowerCase();let ok=false,err='';
+    switch(type){
+        case'dive-deep':if(!fn.endsWith('.csv'))err='❌ Must be CSV';else if(!(fn.includes('dive')||fn.includes('deep')||fn.includes('expected')||fn.includes('vehicle')))err='❌ Wrong file';else ok=true;break;
+        case'vin-audit':if(!fn.endsWith('.xlsx')&&!fn.endsWith('.xls'))err='❌ Must be Excel';else if(!(fn.includes('vin')&&(fn.includes('audit')||fn.includes('detail'))))err='❌ Wrong file';else ok=true;break;
+        case'grounded':if(!fn.endsWith('.xlsx')&&!fn.endsWith('.xls'))err='❌ Must be Excel';else if(!(fn.includes('ground')||(fn.includes('current')&&fn.includes('veh'))))err='❌ Wrong file';else ok=true;break;
+    }
+    const n=document.getElementById(type+'-name');
+    if(ok){uploadedFiles[type]=file;n.innerHTML='✅ '+file.name;n.style.color='#28a745';}
+    else{uploadedFiles[type]=null;input.value='';n.innerHTML=err;n.style.color='#dc3545';alert(err+'\n\nFile: '+file.name);}
+}
+async function processFiles(){
+    if(!uploadedFiles['dive-deep']||!uploadedFiles['vin-audit']||!uploadedFiles['grounded']){showStatus('upload-status','⚠️ Upload all three files.','error');return;}
+    if(!confirm('⚠️ NEW CYCLE\n\nClears ALL data. Affects ALL USERS.\n\nContinue?')){showStatus('upload-status','Cancelled','info');return;}
+    showLoading('Clearing...');
+    try{
+        await database.ref('vehicles').remove();await database.ref('audits').remove();
+        showLoading('Processing...');
+        const dd=await readCSV(uploadedFiles['dive-deep']),va=await readExcel(uploadedFiles['vin-audit'],5),gr=await readExcel(uploadedFiles['grounded'],2);
+        buildVehicleDatabase(dd,va,gr);
+        const saved=await saveVehicleDataToFirebase();hideLoading();
+        if(saved){showStatus('upload-status','✅ '+vehicleDatabase.length+' vehicles uploaded.','success');updateDatabaseStats();uploadedFiles={'dive-deep':null,'vin-audit':null,'grounded':null};['dive-deep-file','vin-audit-file','grounded-file'].forEach(id=>document.getElementById(id).value='');['dive-deep-name','vin-audit-name','grounded-name'].forEach(id=>document.getElementById(id).innerHTML='');}
+        else showStatus('upload-status','⚠️ Cloud save failed.','error');
+    }catch(e){hideLoading();showStatus('upload-status','Error: '+e.message,'error');}
+}
+function readCSV(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>{const lines=e.target.result.split('\n'),data=[];for(let i=1;i<lines.length;i++){const l=lines[i].trim();if(l){const v=l.split(',');data.push({dsp:v[2],vin:v[4],licensePlate:v[5],status:v[6]});}}res(data);};r.onerror=rej;r.readAsText(file);});}
+function readExcel(file,skip){return new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>{try{const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});res(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:null}).slice(skip));}catch(err){rej(err);}};r.onerror=rej;r.readAsArrayBuffer(file);});}
+function buildVehicleDatabase(dd,va,gr){
+    vehicleDatabase=[];const vm=new Map();va.forEach(r=>{if(r[6])vm.set(r[6],r[10]);});const gs=new Set();gr.forEach(r=>{if(r[6])gs.add(r[6]);});
+    dd.forEach(v=>{if(v.vin&&v.licensePlate)vehicleDatabase.push({vin:v.vin,licensePlate:v.licensePlate.toUpperCase(),dsp:v.dsp,status:v.status,isGrounded:gs.has(v.vin),lastAudit:vm.get(v.vin)||null});});
+}
+function updateDatabaseStats(){
+    document.getElementById('total-vehicles').textContent=vehicleDatabase.length;
+    document.getElementById('grounded-count').textContent=vehicleDatabase.filter(v=>v.isGrounded).length;
+    document.getElementById('audited-count').textContent=vehicleDatabase.filter(v=>v.lastAudit).length;
+    document.getElementById('to-audit-count').textContent=vehicleDatabase.filter(v=>!v.lastAudit&&!v.isGrounded).length;
+    updateAuditProgress();
+}
+
+// AUDIT PROGRESS — fixed 70% target
+function getISOWeek(d){d=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));d.setUTCDate(d.getUTCDate()+4-(d.getUTCDay()||7));var ys=new Date(Date.UTC(d.getUTCFullYear(),0,1));return Math.ceil((((d-ys)/86400000)+1)/7);}
+function updateAuditProgress(){
+    const week=getISOWeek(new Date()),target=70;
+    const total=vehicleDatabase.filter(v=>!v.isGrounded).length;
+    const audited=vehicleDatabase.filter(v=>v.lastAudit&&!v.isGrounded).length;
+    const pct=total>0?Math.round((audited/total)*100):0;
+    const needed=Math.max(0,Math.ceil(target*total/100)-audited);
+    const met=pct>=target;
+    document.getElementById('progress-week-badge').textContent='Week '+week;
+    document.getElementById('progress-target-badge').innerHTML='Target: <strong>'+target+'%</strong>';
+    const fill=document.getElementById('progress-fill');fill.style.width=Math.min(pct,100)+'%';fill.textContent=pct+'%';fill.className='progress-bar-fill '+(met?'met':'not-met');
+    const mk=document.getElementById('progress-target-marker');mk.style.left=target+'%';mk.setAttribute('data-label','Target '+target+'%');
+    document.getElementById('prog-current-pct').textContent=pct+'%';document.getElementById('prog-target-pct').textContent=target+'%';
+    document.getElementById('prog-audited').textContent=audited;document.getElementById('prog-total').textContent=total;document.getElementById('prog-needed').textContent=needed;
+    document.getElementById('prog-needed-card').className='progress-num-card highlight-needed'+(needed===0?' zero':'');
+}
+
+// DB CLEARING
+async function clearVehicleDatabase(){if(!window.confirm('Clear ALL vehicle data? Affects all users.'))return;try{showLoading('Clearing...');await database.ref('vehicles').remove();vehicleDatabase=[];hideLoading();updateDatabaseStats();showStatus('clear-status','✅ Vehicle database cleared.','success');}catch(e){hideLoading();showStatus('clear-status','❌ '+e.message,'error');}}
+async function clearAuditDatabase(){if(!window.confirm('Clear ALL audit records? Affects all users.'))return;try{showLoading('Clearing...');await database.ref('audits').remove();hideLoading();showStatus('clear-status','✅ Audit database cleared.','success');if(document.getElementById('download-page').classList.contains('active'))updateReportStats();}catch(e){hideLoading();showStatus('clear-status','❌ '+e.message,'error');}}
+async function clearAllDatabases(){if(!window.confirm('⚠️ CLEAR EVERYTHING? Affects all users!'))return;if(!window.confirm('FINAL CONFIRMATION?'))return;const t=prompt('Type "DELETE ALL":');if(t!=='DELETE ALL'){alert('Cancelled.');return;}try{showLoading('Clearing...');await database.ref('vehicles').remove();await database.ref('audits').remove();vehicleDatabase=[];hideLoading();updateDatabaseStats();showStatus('clear-status','✅ Everything cleared.','success');}catch(e){hideLoading();showStatus('clear-status','❌ '+e.message,'error');}}
+
+// AUTOCOMPLETE
+function handleAutocomplete(){
+    const inp=document.getElementById('license-plate-input'),val=inp.value.toUpperCase(),list=document.getElementById('autocomplete-list');
+    document.getElementById('add-vehicle-card').classList.remove('show');
+    if(val.length<2){list.style.display='none';return;}
+    const m=vehicleDatabase.filter(v=>v.licensePlate.includes(val)).slice(0,10);
+    if(!m.length){list.style.display='none';return;}
+    list.innerHTML=m.map(v=>`<div class="autocomplete-item" onclick="selectVehicle('${v.licensePlate}')"><strong>${v.licensePlate}</strong> — ${v.dsp} — …${v.vin.substr(-6)}</div>`).join('');
+    list.style.display='block';
+}
+function selectVehicle(plate){document.getElementById('license-plate-input').value=plate;document.getElementById('autocomplete-list').style.display='none';searchVehicle();}
+
+// SEARCH → immediate QR
+function searchVehicle(){
+    const plate=document.getElementById('license-plate-input').value.toUpperCase().trim();if(!plate)return;
+    document.getElementById('autocomplete-list').style.display='none';
+    const v=vehicleDatabase.find(x=>x.licensePlate===plate);
+    if(!v){document.getElementById('add-plate').value=plate;document.getElementById('add-dsp').value='';document.getElementById('add-vehicle-card').classList.add('show');return;}
+    document.getElementById('add-vehicle-card').classList.remove('show');
+    currentVehicle=v;auditResult=null;showQROverlay();
+}
+
+// ADD NEW VEHICLE
+async function saveNewVehicle(){
+    const plate=document.getElementById('add-plate').value.toUpperCase().trim(),dsp=document.getElementById('add-dsp').value.trim();
+    if(!plate){alert('No plate');return;}if(!dsp){alert('Please enter the DSP');return;}
+    const nv={vin:'MANUAL-'+plate+'-'+Date.now(),licensePlate:plate,dsp:dsp,status:'Active',isGrounded:false,lastAudit:null};
+    vehicleDatabase.push(nv);showLoading('Adding...');const saved=await saveVehicleDataToFirebase();hideLoading();
+    if(saved){document.getElementById('add-vehicle-card').classList.remove('show');updateDatabaseStats();currentVehicle=nv;auditResult=null;showQROverlay();}
+    else{vehicleDatabase.pop();alert('⚠️ Cloud save failed');}
+}
+function cancelAddVehicle(){document.getElementById('add-vehicle-card').classList.remove('show');document.getElementById('license-plate-input').value='';document.getElementById('license-plate-input').focus();}
+
+// QR OVERLAY
+function showQROverlay(){
+    const qr=document.getElementById('qr-code');qr.innerHTML='';
+    new QRCode(qr,{text:currentVehicle.vin,width:260,height:260,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});
+    document.getElementById('qr-plate-title').textContent=currentVehicle.licensePlate;
+    document.getElementById('qr-grounded-banner').classList.toggle('show',currentVehicle.isGrounded);
+    document.getElementById('qr-vehicle-info').innerHTML=
+        '<strong>'+currentVehicle.dsp+'</strong> · '+(currentVehicle.isGrounded?'🚫 GROUNDED':'✅ ACTIVE')+'<br>'+
+        '<span class="qr-vin">'+currentVehicle.vin+'</span><br>'+
+        'Last Audit: '+(currentVehicle.lastAudit||'None');
+    document.getElementById('qr-decision-area').style.display='';
+    document.getElementById('qr-problem-area').classList.remove('show');
+    document.getElementById('qr-saved-msg').classList.remove('show');
+    document.getElementById('problem-description').value='';
+    document.getElementById('qr-overlay').classList.add('show');
+}
+function resetAudit(){
+    document.getElementById('qr-overlay').classList.remove('show');currentVehicle=null;auditResult=null;
+    document.getElementById('license-plate-input').value='';document.getElementById('problem-description').value='';
+    document.getElementById('add-vehicle-card').classList.remove('show');document.getElementById('license-plate-input').focus();
+}
+
+// AUDIT DECISIONS
+async function vanOK(){
+    if(!currentVehicle)return;auditResult={result:'PASSED',problem:null};
+    document.getElementById('qr-decision-area').style.display='none';
+    const saved=await doSaveAudit();
+    if(saved){document.getElementById('qr-saved-msg').classList.add('show');setTimeout(()=>resetAudit(),800);}
+    else document.getElementById('qr-decision-area').style.display='';
+}
+function vsaBlock(){
+    if(!currentVehicle)return;
+    document.getElementById('qr-decision-area').style.display='none';
+    document.getElementById('qr-problem-area').classList.add('show');
+    setTimeout(()=>document.getElementById('problem-description').focus(),100);
+}
+async function submitBlock(){
+    const p=document.getElementById('problem-description').value.trim();
+    if(!p){alert('Please describe the problem');return;}
+    auditResult={result:'FAILED',problem:p};
+    document.getElementById('qr-problem-area').classList.remove('show');
+    const saved=await doSaveAudit();
+    if(saved){document.getElementById('qr-saved-msg').classList.add('show');setTimeout(()=>resetAudit(),800);}
+}
+async function doSaveAudit(){
+    if(!currentVehicle||!auditResult)return false;
+    const audit={id:Date.now(),vin:currentVehicle.vin,licensePlate:currentVehicle.licensePlate,dsp:currentVehicle.dsp,result:auditResult.result,problem:auditResult.problem,timestamp:new Date().toISOString(),date:new Date().toLocaleDateString(),time:new Date().toLocaleTimeString(),user:currentUser?currentUser.username:'unknown'};
+    const saved=await saveAuditToFirebase(audit);if(!saved){alert('⚠️ Cloud save failed');return false;}
+    const v=vehicleDatabase.find(x=>x.licensePlate===currentVehicle.licensePlate);if(v)v.lastAudit=audit.date;
+    updateDatabaseStats();return true;
+}
+
+// REPORTS
+async function updateReportStats(){try{const s=await database.ref('audits').once('value');const a=[];s.forEach(c=>a.push(c.val()));const t=new Date().toLocaleDateString();document.getElementById('report-total-audits').textContent=a.length;document.getElementById('report-passed').textContent=a.filter(x=>x.result==='PASSED').length;document.getElementById('report-failed').textContent=a.filter(x=>x.result==='FAILED').length;document.getElementById('report-today').textContent=a.filter(x=>x.date===t).length;}catch(e){console.error(e);}}
+async function downloadAllAudits(){await downloadAudits('all');}
+async function downloadPassedOnly(){await downloadAudits('passed');}
+async function downloadFailedOnly(){await downloadAudits('failed');}
+async function downloadAudits(type){
+    try{showLoading('Loading...');const s=await database.ref('audits').once('value');let a=[];s.forEach(c=>a.push(c.val()));
+    if(type==='passed')a=a.filter(x=>x.result==='PASSED');else if(type==='failed')a=a.filter(x=>x.result==='FAILED');
+    hideLoading();if(!a.length){alert('No audits');return;}
+    const h=['ID','Date','Time','Plate','VIN','DSP','Result','Problem','User'];
+    const csv=[h,...a.map(x=>[x.id,x.date,x.time,x.licensePlate,x.vin,x.dsp,x.result,x.problem||'',x.user||''])].map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
+    const blob=new Blob([csv],{type:'text/csv'});const url=URL.createObjectURL(blob);const el=document.createElement('a');el.href=url;el.download='vsa_audits_'+type+'_'+new Date().toISOString().split('T')[0]+'.csv';el.click();
+    showStatus('download-status','Downloaded '+a.length+' records','success');}catch(e){hideLoading();alert('Error: '+e.message);}
+}
+
+// UTILITY
+let statusTimers={};
+function showStatus(id,msg,type){const el=document.getElementById(id);el.className='status-message status-'+type;el.innerHTML=msg.replace(/\n/g,'<br>');el.style.display='block';if(statusTimers[id])clearTimeout(statusTimers[id]);if(type==='success'||type==='info'){statusTimers[id]=setTimeout(()=>{el.style.transition='opacity 0.5s';el.style.opacity='0';setTimeout(()=>{el.style.display='none';el.style.opacity='1';el.style.transition='';},500);},5000);}}
+function showLoading(t){document.getElementById('loading-text').textContent=t;document.getElementById('loading-overlay').classList.add('show');}
+function hideLoading(){document.getElementById('loading-overlay').classList.remove('show');}
+
+// MODAL
+let currentModalData=[],currentModalType='',modalSortCol=null,modalSortDir='asc';
+function closeModal(){document.getElementById('data-modal').classList.remove('show');}
+
+function viewVehicleData(type){
+    let data=[],title='';
+    switch(type){case'active':data=vehicleDatabase.slice();title='All Active Vehicles';break;case'grounded':data=vehicleDatabase.filter(v=>v.isGrounded);title='Grounded Vehicles';break;case'audited':data=vehicleDatabase.filter(v=>v.lastAudit);title='Already Audited';break;case'to-audit':data=vehicleDatabase.filter(v=>!v.lastAudit&&!v.isGrounded);title='🚐 To Be Audited';break;}
+    if(!data.length){showModalEmpty(title,'No vehicles found.');return;}
+    currentModalData=data;currentModalType='vehicle';modalSortCol=null;modalSortDir='asc';
+    document.getElementById('modal-title').textContent=title;
+    const dspSet=[...new Set(data.map(v=>v.dsp))].sort();
+    document.getElementById('modal-body').innerHTML='<div class="modal-toolbar"><input class="search-input" type="text" id="v-search" placeholder="🔍 Search…" oninput="renderVehicleTable()"><div class="toolbar-group"><span class="toolbar-label">DSP</span><div class="ms-wrap" id="v-dsp">'+dspSet.map(d=>'<button class="ms-pill" data-val="'+d+'" onclick="togglePill(this,\'renderVehicleTable\')">'+d+'</button>').join('')+'</div></div><div class="toolbar-group"><span class="toolbar-label">Status</span><div class="ms-wrap" id="v-status"><button class="ms-pill" data-val="active" onclick="togglePill(this,\'renderVehicleTable\')">Active</button><button class="ms-pill" data-val="grounded" onclick="togglePill(this,\'renderVehicleTable\')">Grounded</button><button class="ms-pill" data-val="audited" onclick="togglePill(this,\'renderVehicleTable\')">Audited</button><button class="ms-pill" data-val="not-audited" onclick="togglePill(this,\'renderVehicleTable\')">Not Audited</button></div></div><span class="modal-count" id="v-count">'+data.length+' vehicles</span></div><div id="v-table"></div>';
+    renderVehicleTable();document.getElementById('data-modal').classList.add('show');
+}
+function renderVehicleTable(){
+    const search=document.getElementById('v-search').value.toLowerCase(),dsps=getSelectedPills('v-dsp'),statuses=getSelectedPills('v-status');
+    let f=currentModalData.filter(v=>{if(search&&!v.licensePlate.toLowerCase().includes(search)&&!v.vin.toLowerCase().includes(search))return false;if(dsps.length&&!dsps.includes(v.dsp))return false;if(statuses.length&&!statuses.some(s=>s==='active'?!v.isGrounded:s==='grounded'?v.isGrounded:s==='audited'?!!v.lastAudit:!v.lastAudit))return false;return true;});
+    if(modalSortCol)f.sort((a,b)=>{let va=getVSV(a,modalSortCol),vb=getVSV(b,modalSortCol);return va<vb?(modalSortDir==='asc'?-1:1):va>vb?(modalSortDir==='asc'?1:-1):0;});
+    document.getElementById('v-count').textContent=f.length+' vehicles';
+    const cols=[{k:'licensePlate',l:'Plate'},{k:'vin',l:'VIN'},{k:'dsp',l:'DSP'},{k:'status',l:'Status'},{k:'lastAudit',l:'Last Audit'}];
+    const th=cols.map(c=>{let a='',cl='';if(modalSortCol===c.k){a=modalSortDir==='asc'?'▲':'▼';cl=' class="active-sort"';}return'<th'+cl+' onclick="sortV(\''+c.k+'\')">'+c.l+'<span class="sort-arrow">'+(a||'⇅')+'</span></th>';}).join('');
+    const tb=f.map(v=>'<tr><td><strong>'+v.licensePlate+'</strong></td><td>'+v.vin+'</td><td>'+v.dsp+'</td><td>'+(v.isGrounded?'<span class="status-badge-table badge-grounded-table">GROUNDED</span>':'<span class="status-badge-table badge-active-table">ACTIVE</span>')+'</td><td>'+(v.lastAudit||'—')+'</td></tr>').join('');
+    document.getElementById('v-table').innerHTML='<table class="data-table"><thead><tr>'+th+'</tr></thead><tbody>'+(tb||'<tr><td colspan="5" style="text-align:center;color:#aaa;padding:30px;">No matches</td></tr>')+'</tbody></table>';
+}
+function getVSV(v,c){switch(c){case'licensePlate':return v.licensePlate.toLowerCase();case'vin':return v.vin.toLowerCase();case'dsp':return v.dsp.toLowerCase();case'status':return v.isGrounded?'z':'a';case'lastAudit':return v.lastAudit||'';default:return'';}}
+function sortV(c){if(modalSortCol===c)modalSortDir=modalSortDir==='asc'?'desc':'asc';else{modalSortCol=c;modalSortDir='asc';}renderVehicleTable();}
+
+async function viewAuditData(type){
+    try{showLoading('Loading…');const s=await database.ref('audits').once('value');let a=[];s.forEach(c=>a.push(c.val()));let data=[],title='';const today=new Date().toLocaleDateString();
+    switch(type){case'all':data=a;title='All Audits';break;case'passed':data=a.filter(x=>x.result==='PASSED');title='Passed';break;case'failed':data=a.filter(x=>x.result==='FAILED');title='Failed';break;case'today':data=a.filter(x=>x.date===today);title="Today's Audits";break;}
+    hideLoading();if(!data.length){showModalEmpty(title,'No audits found.');return;}
+    currentModalData=data;currentModalType='audit';modalSortCol=null;modalSortDir='asc';
+    document.getElementById('modal-title').textContent=title;
+    const dspSet=[...new Set(data.map(x=>x.dsp))].sort(),userSet=[...new Set(data.map(x=>x.user||'Unknown'))].sort();
+    document.getElementById('modal-body').innerHTML='<div class="modal-toolbar"><input class="search-input" type="text" id="a-search" placeholder="🔍 Search…" oninput="renderAuditTable()"><div class="toolbar-group"><span class="toolbar-label">Result</span><div class="ms-wrap" id="a-result"><button class="ms-pill" data-val="PASSED" onclick="togglePill(this,\'renderAuditTable\')">Passed</button><button class="ms-pill" data-val="FAILED" onclick="togglePill(this,\'renderAuditTable\')">Failed</button></div></div><div class="toolbar-group"><span class="toolbar-label">DSP</span><div class="ms-wrap" id="a-dsp">'+dspSet.map(d=>'<button class="ms-pill" data-val="'+d+'" onclick="togglePill(this,\'renderAuditTable\')">'+d+'</button>').join('')+'</div></div><div class="toolbar-group"><span class="toolbar-label">User</span><div class="ms-wrap" id="a-user">'+userSet.map(u=>'<button class="ms-pill" data-val="'+u+'" onclick="togglePill(this,\'renderAuditTable\')">'+u+'</button>').join('')+'</div></div><span class="modal-count" id="a-count">'+data.length+' audits</span></div><div id="a-table"></div>';
+    renderAuditTable();document.getElementById('data-modal').classList.add('show');
+    }catch(e){hideLoading();alert('Error: '+e.message);}
+}
+function renderAuditTable(){
+    const search=document.getElementById('a-search').value.toLowerCase(),results=getSelectedPills('a-result'),dsps=getSelectedPills('a-dsp'),users=getSelectedPills('a-user');
+    let f=currentModalData.filter(a=>{if(search&&!a.licensePlate.toLowerCase().includes(search)&&!a.vin.toLowerCase().includes(search))return false;if(results.length&&!results.includes(a.result))return false;if(dsps.length&&!dsps.includes(a.dsp))return false;if(users.length&&!users.includes(a.user||'Unknown'))return false;return true;});
+    if(modalSortCol)f.sort((a,b)=>{let va=getASV(a,modalSortCol),vb=getASV(b,modalSortCol);return va<vb?(modalSortDir==='asc'?-1:1):va>vb?(modalSortDir==='asc'?1:-1):0;});
+    document.getElementById('a-count').textContent=f.length+' audits';
+    const cols=[{k:'date',l:'Date'},{k:'time',l:'Time'},{k:'licensePlate',l:'Plate'},{k:'vin',l:'VIN'},{k:'dsp',l:'DSP'},{k:'result',l:'Result'},{k:'problem',l:'Problem'},{k:'user',l:'User'}];
+    const th=cols.map(c=>{let a='',cl='';if(modalSortCol===c.k){a=modalSortDir==='asc'?'▲':'▼';cl=' class="active-sort"';}return'<th'+cl+' onclick="sortA(\''+c.k+'\')">'+c.l+'<span class="sort-arrow">'+(a||'⇅')+'</span></th>';}).join('');
+    const tb=f.map(a=>'<tr><td>'+a.date+'</td><td>'+a.time+'</td><td><strong>'+a.licensePlate+'</strong></td><td>'+a.vin+'</td><td>'+a.dsp+'</td><td>'+(a.result==='PASSED'?'<span class="status-badge-table badge-passed-table">PASSED</span>':'<span class="status-badge-table badge-failed-table">FAILED</span>')+'</td><td>'+(a.problem||'—')+'</td><td>'+(a.user||'?')+'</td></tr>').join('');
+    document.getElementById('a-table').innerHTML='<table class="data-table"><thead><tr>'+th+'</tr></thead><tbody>'+(tb||'<tr><td colspan="8" style="text-align:center;color:#aaa;padding:30px;">No matches</td></tr>')+'</tbody></table>';
+}
+function getASV(a,c){switch(c){case'date':return a.date||'';case'time':return a.time||'';case'licensePlate':return a.licensePlate.toLowerCase();case'vin':return a.vin.toLowerCase();case'dsp':return a.dsp.toLowerCase();case'result':return a.result||'';case'problem':return(a.problem||'').toLowerCase();case'user':return(a.user||'').toLowerCase();default:return'';}}
+function sortA(c){if(modalSortCol===c)modalSortDir=modalSortDir==='asc'?'desc':'asc';else{modalSortCol=c;modalSortDir='asc';}renderAuditTable();}
+function showModalEmpty(title,msg){document.getElementById('modal-title').textContent=title;document.getElementById('modal-body').innerHTML='<div class="empty-data"><p>'+msg+'</p></div>';document.getElementById('data-modal').classList.add('show');}
+
+function exportModalData(){
+    const rows=document.querySelectorAll('.data-table tbody tr');if(!rows.length){alert('No data.');return;}
+    const mTitle=document.getElementById('modal-title').textContent,date=new Date().toISOString().split('T')[0];let csv='',fn='';
+    if(currentModalType==='vehicle'){fn='vehicles_'+mTitle.toLowerCase().replace(/[^a-z0-9]/g,'_')+'_'+date+'.csv';const h=['Plate','VIN','DSP','Status','Last Audit'],search=document.getElementById('v-search').value.toLowerCase(),dsps=getSelectedPills('v-dsp'),statuses=getSelectedPills('v-status');let f=currentModalData.filter(v=>{if(search&&!v.licensePlate.toLowerCase().includes(search)&&!v.vin.toLowerCase().includes(search))return false;if(dsps.length&&!dsps.includes(v.dsp))return false;if(statuses.length&&!statuses.some(s=>s==='active'?!v.isGrounded:s==='grounded'?v.isGrounded:s==='audited'?!!v.lastAudit:!v.lastAudit))return false;return true;});csv=[h,...f.map(v=>[v.licensePlate,v.vin,v.dsp,v.isGrounded?'GROUNDED':'ACTIVE',v.lastAudit||''])].map(r=>r.map(c=>'"'+c+'"').join(',')).join('\n');}
+    else{fn='audits_'+mTitle.toLowerCase().replace(/[^a-z0-9]/g,'_')+'_'+date+'.csv';const h=['Date','Time','Plate','VIN','DSP','Result','Problem','User'],search=document.getElementById('a-search').value.toLowerCase(),results=getSelectedPills('a-result'),dsps=getSelectedPills('a-dsp'),users=getSelectedPills('a-user');let f=currentModalData.filter(a=>{if(search&&!a.licensePlate.toLowerCase().includes(search)&&!a.vin.toLowerCase().includes(search))return false;if(results.length&&!results.includes(a.result))return false;if(dsps.length&&!dsps.includes(a.dsp))return false;if(users.length&&!users.includes(a.user||'Unknown'))return false;return true;});csv=[h,...f.map(a=>[a.date,a.time,a.licensePlate,a.vin,a.dsp,a.result,a.problem||'',a.user||''])].map(r=>r.map(c=>'"'+c+'"').join(',')).join('\n');}
+    const blob=new Blob([csv],{type:'text/csv'}),url=URL.createObjectURL(blob),el=document.createElement('a');el.href=url;el.download=fn;el.click();
+}
+
+function togglePill(btn,fn){btn.classList.toggle('on');if(typeof window[fn]==='function')window[fn]();}
+function getSelectedPills(id){const c=document.getElementById(id);if(!c)return[];return[...c.querySelectorAll('.ms-pill.on')].map(b=>b.dataset.val);}
+document.addEventListener('click',function(e){if(e.target===document.getElementById('data-modal'))closeModal();});
+</script>
 </body>
 </html>
