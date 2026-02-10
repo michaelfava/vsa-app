@@ -563,7 +563,7 @@ async function saveNewVehicle(){
     if(!plate){alert('No plate');return;}
     const nv={vin:'MANUAL-'+plate+'-'+Date.now(),licensePlate:plate,dsp:dsp||'N/A',status:'Active',isGrounded:false,lastAudit:null};
     vehicleDatabase.push(nv);showLoading('Adding...');const saved=await saveVehicleDataToFirebase();hideLoading();
-    if(saved){document.getElementById('add-vehicle-card').classList.remove('show');updateDatabaseStats();currentVehicle=nv;auditResult=null;showQROverlay();}
+    if(saved){document.getElementById('add-vehicle-card').classList.remove('show');updateDatabaseStats();document.getElementById('license-plate-input').value='';alert('✅ Vehicle '+plate+' added to database');}
     else{vehicleDatabase.pop();alert('⚠️ Cloud save failed');}
 }
 function cancelAddVehicle(){document.getElementById('add-vehicle-card').classList.remove('show');document.getElementById('license-plate-input').value='';document.getElementById('license-plate-input').focus();}
