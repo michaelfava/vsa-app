@@ -406,24 +406,48 @@
 // FIREBASE
 // ================================================================
 const firebaseConfig={apiKey:"AIzaSyBpWSHW3fnPUvADjVxKNh5qpJ2lXkJNZRo",authDomain:"vsa-app-13a1f.firebaseapp.com",databaseURL:"https://vsa-app-13a1f-default-rtdb.europe-west1.firebasedatabase.app",projectId:"vsa-app-13a1f",storageBucket:"vsa-app-13a1f.firebasestorage.app",messagingSenderId:"1090077459793",appId:"1:1090077459793:web:5a3fcaca4923dce511bf70"};
-let app,database,auth,firebaseInitialized=false;
-try{app=firebase.initializeApp(firebaseConfig);database=firebase.database();auth=firebase.auth();firebaseInitialized=true;
-// Enable offline persistence
-database.ref('.info/connected').on('value',function(snap){
-    window._fbConnected=!!snap.val();
-    console.log('Firebase connected:',window._fbConnected);
-});
+let app,auth,firebaseInitialized=false;
+try{app=firebase.initializeApp(firebaseConfig);auth=firebase.auth();
+    // Keep auth session across refresh
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+    firebaseInitialized=true;
 }catch(e){console.error(e);}
 
-// Reconnect Firebase when phone unlocks / tab becomes visible
-document.addEventListener('visibilitychange',function(){
-    if(document.visibilityState==='visible'&&firebaseInitialized){
-        console.log('Page visible — checking pending audits');
-        setTimeout(flushPendingAudits,2000);
-    }
-});
+const FB='https://vsa-app-13a1f-default-rtdb.europe-west1.firebasedatabase.app';
 
-// Pending audit queue in localStorage
+// Get fresh auth token for REST calls
+async function getToken(){
+    if(!auth.currentUser)throw new Error('Not logged in');
+    return await auth.currentUser.getIdToken(true); // force refresh
+}
+
+// ── REST helpers ──
+async function fbGet(path){
+    const t=await getToken();
+    const r=await fetch(FB+path+'.json?auth='+t);
+    if(!r.ok)throw new Error('GET '+path+' failed: '+r.status);
+    return await r.json();
+}
+async function fbPut(path,data){
+    const t=await getToken();
+    const r=await fetch(FB+path+'.json?auth='+t,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+    if(!r.ok)throw new Error('PUT '+path+' failed: '+r.status);
+    return await r.json();
+}
+async function fbPost(path,data){
+    const t=await getToken();
+    const r=await fetch(FB+path+'.json?auth='+t,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+    if(!r.ok)throw new Error('POST '+path+' failed: '+r.status);
+    return await r.json();
+}
+async function fbDelete(path){
+    const t=await getToken();
+    const r=await fetch(FB+path+'.json?auth='+t,{method:'DELETE'});
+    if(!r.ok)throw new Error('DELETE '+path+' failed: '+r.status);
+    return true;
+}
+
+// Pending audit queue in localStorage (offline fallback)
 function getPendingAudits(){try{return JSON.parse(localStorage.getItem('vsa_pending_audits')||'[]');}catch(e){return[];}}
 function setPendingAudits(arr){localStorage.setItem('vsa_pending_audits',JSON.stringify(arr));}
 function addPendingAudit(audit){const p=getPendingAudits();p.push(audit);setPendingAudits(p);console.log('Audit queued locally, pending:',p.length);}
@@ -434,53 +458,53 @@ async function flushPendingAudits(){
     console.log('Flushing',pending.length,'pending audits...');
     const stillPending=[];
     for(const audit of pending){
-        try{
-            await database.ref('audits').push(audit);
-            console.log('Flushed audit:',audit.licensePlate);
-        }catch(e){
-            console.error('Still failed to flush:',e);
-            stillPending.push(audit);
-        }
+        try{await fbPost('/audits',audit);console.log('Flushed:',audit.licensePlate);}
+        catch(e){console.error('Flush failed:',e);stillPending.push(audit);}
     }
     setPendingAudits(stillPending);
-    if(stillPending.length) console.log(stillPending.length+' audits still pending');
-    else console.log('All pending audits flushed!');
 }
 
+document.addEventListener('visibilitychange',function(){
+    if(document.visibilityState==='visible'&&currentUser) setTimeout(flushPendingAudits,1000);
+});
 
 let vehicleDatabase=[],currentVehicle=null,auditResult=null,currentUser=null;
 let allAudits=[];
 
-// Single function to fetch ALL fresh data from Firebase via REST API (bypasses SDK cache)
-const FIREBASE_DB_URL='https://vsa-app-13a1f-default-rtdb.europe-west1.firebasedatabase.app';
-
+// Fetch ALL fresh data from server
 async function fetchAllData(){
     try{
-        const token=await auth.currentUser.getIdToken();
-        const headers={'Authorization':'Bearer '+token};
-
-        const [vRes,aRes]=await Promise.all([
-            fetch(FIREBASE_DB_URL+'/vehicles.json?auth='+token),
-            fetch(FIREBASE_DB_URL+'/audits.json?auth='+token)
-        ]);
-
-        const vData=await vRes.json();
+        const [vData,aData]=await Promise.all([fbGet('/vehicles'),fbGet('/audits')]);
         vehicleDatabase=(vData&&Array.isArray(vData))?vData:[];
-
-        const aData=await aRes.json();
         allAudits=[];
-        if(aData){Object.values(aData).forEach(a=>allAudits.push(a));}
-
-        console.log('📡 REST fetch:',vehicleDatabase.length,'vehicles,',allAudits.length,'audits');
+        if(aData) Object.values(aData).forEach(a=>allAudits.push(a));
+        console.log('📡 Fetched',vehicleDatabase.length,'vehicles,',allAudits.length,'audits');
         updateDatabaseStats();
         updateReportStatsFromCache();
-    }catch(e){
-        console.error('Fetch error:',e);
-    }
+    }catch(e){console.error('Fetch error:',e);}
 }
 
 document.addEventListener('DOMContentLoaded',function(){
-    setupEventListeners();checkLoginStatus();initializeCollapsibleSections();
+    setupEventListeners();
+    initializeCollapsibleSections();
+    // Use onAuthStateChanged to survive page refresh
+    if(firebaseInitialized){
+        auth.onAuthStateChanged(function(user){
+            if(user){
+                currentUser={username:user.email,uid:user.uid};
+                fetchAllData().then(()=>{
+                    showPage('upload-page');
+                    updateFirebaseStatus('connected','Logged in as: '+user.email);
+                    setTimeout(flushPendingAudits,2000);
+                });
+            } else {
+                currentUser=null;
+                showPage('login-page');
+            }
+        });
+    } else {
+        showPage('login-page');
+    }
 });
 
 function setupEventListeners(){
@@ -501,9 +525,8 @@ async function handleLogin(e){
         const cred=await auth.signInWithEmailAndPassword(email,pw);
         currentUser={username:email,uid:cred.user.uid};
         document.getElementById('login-error').classList.add('hidden');
-        await loadVehicleDataFromFirebase();hideLoading();
+        await fetchAllData();hideLoading();
         showPage('upload-page');updateFirebaseStatus('connected','Logged in as: '+email);
-        // Flush any pending audits from previous session
         setTimeout(flushPendingAudits,2000);
     }catch(error){
         hideLoading();
@@ -512,26 +535,18 @@ async function handleLogin(e){
         document.getElementById('login-error').textContent=msg;document.getElementById('login-error').classList.remove('hidden');
     }
 }
-function checkLoginStatus(){
-    if(firebaseInitialized&&auth.currentUser){currentUser={username:auth.currentUser.email,uid:auth.currentUser.uid};loadVehicleDataFromFirebase().then(()=>{showPage('upload-page');updateFirebaseStatus('connected','Logged in as: '+auth.currentUser.email);setTimeout(flushPendingAudits,2000);});}
-    else showPage('login-page');
-}
-function logout(){if(auth)auth.signOut();currentUser=null;vehicleDatabase=[];allAudits=[];showPage('login-page');}
+function logout(){auth.signOut();currentUser=null;vehicleDatabase=[];allAudits=[];showPage('login-page');}
 
-// FIREBASE DATA
-async function loadVehicleDataFromFirebase(){
-    await fetchAllData();
-}
+// SAVE functions — all REST
 async function saveVehicleDataToFirebase(){
-    try{showLoading('Saving...');await database.ref('vehicles').set(vehicleDatabase);hideLoading();updateFirebaseStatus('connected',vehicleDatabase.length+' vehicles synced');return true;}
+    try{showLoading('Saving...');await fbPut('/vehicles',vehicleDatabase);hideLoading();updateFirebaseStatus('connected',vehicleDatabase.length+' vehicles synced');return true;}
     catch(e){hideLoading();updateFirebaseStatus('error',e.message);return false;}
 }
 async function saveAuditToFirebase(audit){
-    // Simple direct save — no connection cycling
     for(let attempt=1;attempt<=3;attempt++){
         try{
             console.log('Save attempt',attempt,'for',audit.licensePlate);
-            await database.ref('audits').push(audit);
+            await fbPost('/audits',audit);
             console.log('✅ Audit saved on attempt',attempt);
             setTimeout(flushPendingAudits,3000);
             return true;
@@ -540,7 +555,6 @@ async function saveAuditToFirebase(audit){
             if(attempt<3) await new Promise(r=>setTimeout(r,1500*attempt));
         }
     }
-    // All retries failed — queue locally
     console.error('All attempts failed — queuing locally');
     addPendingAudit(audit);
     return 'queued';
@@ -582,7 +596,7 @@ async function processFiles(){
     if(!confirm('⚠️ NEW CYCLE\n\nClears ALL data. Affects ALL USERS.\n\nContinue?')){showStatus('upload-status','Cancelled','info');return;}
     showLoading('Clearing...');
     try{
-        await database.ref('vehicles').remove();await database.ref('audits').remove();
+        await fbDelete('/vehicles');await fbDelete('/audits');allAudits=[];
         showLoading('Processing...');
         const dd=await readCSV(uploadedFiles['dive-deep']),va=await readExcel(uploadedFiles['vin-audit'],5),gr=await readExcel(uploadedFiles['grounded'],2);
         buildVehicleDatabase(dd,va,gr);
@@ -624,16 +638,14 @@ function updateAuditProgress(){
     document.getElementById('prog-needed-card').className='progress-num-card highlight-needed'+(needed===0?' zero':'');
 }
 
-// DB CLEARING
-async function clearVehicleDatabase(){if(!window.confirm('Clear ALL vehicle data? Affects all users.'))return;try{showLoading('Clearing...');await database.ref('vehicles').remove();vehicleDatabase=[];hideLoading();updateDatabaseStats();updateReportStatsFromCache();showStatus('clear-status','✅ Vehicle database cleared.','success');}catch(e){hideLoading();showStatus('clear-status','❌ '+e.message,'error');}}
-async function clearAuditDatabase(){if(!window.confirm('Clear ALL audit records and manually added vehicles? Affects all users.'))return;try{showLoading('Clearing...');await database.ref('audits').remove();
-    // Also remove manually added vehicles
+// DB CLEARING — all REST
+async function clearVehicleDatabase(){if(!window.confirm('Clear ALL vehicle data? Affects all users.'))return;try{showLoading('Clearing...');await fbDelete('/vehicles');vehicleDatabase=[];hideLoading();updateDatabaseStats();updateReportStatsFromCache();showStatus('clear-status','✅ Vehicle database cleared.','success');}catch(e){hideLoading();showStatus('clear-status','❌ '+e.message,'error');}}
+async function clearAuditDatabase(){if(!window.confirm('Clear ALL audit records and manually added vehicles? Affects all users.'))return;try{showLoading('Clearing...');await fbDelete('/audits');
     vehicleDatabase=vehicleDatabase.filter(v=>!v.vin||!v.vin.startsWith('MANUAL-'));
-    await database.ref('vehicles').set(vehicleDatabase);
-    // Clear pending local queue too
+    await fbPut('/vehicles',vehicleDatabase);
     setPendingAudits([]);allAudits=[];
     hideLoading();updateDatabaseStats();updateReportStatsFromCache();showStatus('clear-status','✅ Audit database and manually added vehicles cleared.','success');}catch(e){hideLoading();showStatus('clear-status','❌ '+e.message,'error');}}
-async function clearAllDatabases(){if(!window.confirm('⚠️ CLEAR EVERYTHING? Affects all users!'))return;if(!window.confirm('FINAL CONFIRMATION?'))return;const t=prompt('Type "DELETE ALL":');if(t!=='DELETE ALL'){alert('Cancelled.');return;}try{showLoading('Clearing...');await database.ref('vehicles').remove();await database.ref('audits').remove();vehicleDatabase=[];allAudits=[];setPendingAudits([]);hideLoading();updateDatabaseStats();updateReportStatsFromCache();showStatus('clear-status','✅ Everything cleared.','success');}catch(e){hideLoading();showStatus('clear-status','❌ '+e.message,'error');}}
+async function clearAllDatabases(){if(!window.confirm('⚠️ CLEAR EVERYTHING? Affects all users!'))return;if(!window.confirm('FINAL CONFIRMATION?'))return;const t=prompt('Type "DELETE ALL":');if(t!=='DELETE ALL'){alert('Cancelled.');return;}try{showLoading('Clearing...');await fbDelete('/vehicles');await fbDelete('/audits');vehicleDatabase=[];allAudits=[];setPendingAudits([]);hideLoading();updateDatabaseStats();updateReportStatsFromCache();showStatus('clear-status','✅ Everything cleared.','success');}catch(e){hideLoading();showStatus('clear-status','❌ '+e.message,'error');}}
 
 // AUTOCOMPLETE
 function handleAutocomplete(){
@@ -731,7 +743,7 @@ async function doSaveAudit(){
     const v=vehicleDatabase.find(x=>x.licensePlate===currentVehicle.licensePlate);
     if(v){
         v.lastAudit=audit.date;
-        database.ref('vehicles').set(vehicleDatabase).catch(e=>console.error('Vehicle sync error:',e));
+        fbPut('/vehicles',vehicleDatabase).catch(e=>console.error('Vehicle sync error:',e));
     }
     // Also update local allAudits immediately so reports are fresh
     allAudits.push(audit);
@@ -783,7 +795,9 @@ function hideLoading(){document.getElementById('loading-overlay').classList.remo
 let currentModalData=[],currentModalType='',modalSortCol=null,modalSortDir='asc';
 function closeModal(){document.getElementById('data-modal').classList.remove('show');}
 
+let currentVehicleViewType='active';
 function viewVehicleData(type){
+    currentVehicleViewType=type;
     let data=[],title='';
     switch(type){case'active':data=vehicleDatabase.slice();title='All Active Vehicles';break;case'grounded':data=vehicleDatabase.filter(v=>v.isGrounded);title='Grounded Vehicles';break;case'audited':data=vehicleDatabase.filter(v=>v.lastAudit);title='Already Audited';break;case'to-audit':data=vehicleDatabase.filter(v=>!v.lastAudit&&!v.isGrounded);title='🚐 To Be Audited';break;case'manual':data=vehicleDatabase.filter(v=>v.vin&&v.vin.startsWith('MANUAL-'));title='➕ Manually Added Vehicles';
         if(!data.length){showModalEmpty(title,'No manually added vehicles.');return;}
@@ -795,41 +809,84 @@ function viewVehicleData(type){
     currentModalData=data;currentModalType='vehicle';modalSortCol=null;modalSortDir='asc';
     document.getElementById('modal-title').textContent=title;
     const dspSet=[...new Set(data.map(v=>v.dsp))].sort();
-    document.getElementById('modal-body').innerHTML='<div class="modal-toolbar"><input class="search-input" type="text" id="v-search" placeholder="🔍 Search…" oninput="renderVehicleTable()"><div class="toolbar-group"><span class="toolbar-label">DSP</span><div class="ms-wrap" id="v-dsp">'+dspSet.map(d=>'<button class="ms-pill" data-val="'+d+'" onclick="togglePill(this,\'renderVehicleTable\')">'+d+'</button>').join('')+'</div></div><div class="toolbar-group"><span class="toolbar-label">Status</span><div class="ms-wrap" id="v-status"><button class="ms-pill" data-val="active" onclick="togglePill(this,\'renderVehicleTable\')">Active</button><button class="ms-pill" data-val="grounded" onclick="togglePill(this,\'renderVehicleTable\')">Grounded</button><button class="ms-pill" data-val="audited" onclick="togglePill(this,\'renderVehicleTable\')">Audited</button><button class="ms-pill" data-val="not-audited" onclick="togglePill(this,\'renderVehicleTable\')">Not Audited</button></div></div><span class="modal-count" id="v-count">'+data.length+' vehicles</span></div><div id="v-table"></div>';
+    // Build toolbar — only relevant filters
+    let toolbar='<div class="modal-toolbar"><input class="search-input" type="text" id="v-search" placeholder="🔍 Search…" oninput="renderVehicleTable()">';
+    // DSP filter only if multiple DSPs
+    if(dspSet.length>1){toolbar+='<div class="toolbar-group"><span class="toolbar-label">DSP</span><div class="ms-wrap" id="v-dsp">'+dspSet.map(d=>'<button class="ms-pill" data-val="'+d+'" onclick="togglePill(this,\'renderVehicleTable\')">'+d+'</button>').join('')+'</div></div>';}
+    // Status filter only for 'active' (all vehicles) view
+    if(type==='active'){toolbar+='<div class="toolbar-group"><span class="toolbar-label">STATUS</span><div class="ms-wrap" id="v-status"><button class="ms-pill" data-val="active" onclick="togglePill(this,\'renderVehicleTable\')">Active</button><button class="ms-pill" data-val="grounded" onclick="togglePill(this,\'renderVehicleTable\')">Grounded</button><button class="ms-pill" data-val="audited" onclick="togglePill(this,\'renderVehicleTable\')">Audited</button><button class="ms-pill" data-val="not-audited" onclick="togglePill(this,\'renderVehicleTable\')">Not Audited</button></div></div>';}
+    toolbar+='<span class="modal-count" id="v-count">'+data.length+' vehicles</span></div>';
+    document.getElementById('modal-body').innerHTML=toolbar+'<div id="v-table"></div>';
     renderVehicleTable();document.getElementById('data-modal').classList.add('show');
 }
 function renderVehicleTable(){
-    const search=document.getElementById('v-search').value.toLowerCase(),dsps=getSelectedPills('v-dsp'),statuses=getSelectedPills('v-status');
-    let f=currentModalData.filter(v=>{if(search&&!v.licensePlate.toLowerCase().includes(search)&&!v.vin.toLowerCase().includes(search))return false;if(dsps.length&&!dsps.includes(v.dsp))return false;if(statuses.length&&!statuses.some(s=>s==='active'?!v.isGrounded:s==='grounded'?v.isGrounded:s==='audited'?!!v.lastAudit:!v.lastAudit))return false;return true;});
+    const search=document.getElementById('v-search').value.toLowerCase();
+    const dspEl=document.getElementById('v-dsp'),statusEl=document.getElementById('v-status');
+    const dsps=dspEl?getSelectedPills('v-dsp'):[],statuses=statusEl?getSelectedPills('v-status'):[];
+    let f=currentModalData.filter(v=>{if(search&&!v.licensePlate.toLowerCase().includes(search)&&!v.vin.toLowerCase().includes(search)&&!(v.dsp||'').toLowerCase().includes(search))return false;if(dsps.length&&!dsps.includes(v.dsp))return false;if(statuses.length&&!statuses.some(s=>s==='active'?!v.isGrounded:s==='grounded'?v.isGrounded:s==='audited'?!!v.lastAudit:!v.lastAudit))return false;return true;});
     if(modalSortCol)f.sort((a,b)=>{let va=getVSV(a,modalSortCol),vb=getVSV(b,modalSortCol);return va<vb?(modalSortDir==='asc'?-1:1):va>vb?(modalSortDir==='asc'?1:-1):0;});
     document.getElementById('v-count').textContent=f.length+' vehicles';
-    const cols=[{k:'licensePlate',l:'Plate'},{k:'vin',l:'VIN'},{k:'dsp',l:'DSP'},{k:'status',l:'Status'},{k:'lastAudit',l:'Last Audit'}];
+    // Columns depend on view type — hide redundant columns
+    let cols=[{k:'licensePlate',l:'Plate'},{k:'vin',l:'VIN'},{k:'dsp',l:'DSP'}];
+    if(currentVehicleViewType==='active') cols.push({k:'status',l:'Status'});
+    if(currentVehicleViewType!=='to-audit') cols.push({k:'lastAudit',l:'Last Audit'});
+    const colCount=cols.length;
     const th=cols.map(c=>{let a='',cl='';if(modalSortCol===c.k){a=modalSortDir==='asc'?'▲':'▼';cl=' class="active-sort"';}return'<th'+cl+' onclick="sortV(\''+c.k+'\')">'+c.l+'<span class="sort-arrow">'+(a||'⇅')+'</span></th>';}).join('');
-    const tb=f.map(v=>'<tr><td><strong>'+v.licensePlate+'</strong></td><td>'+v.vin+'</td><td>'+v.dsp+'</td><td>'+(v.isGrounded?'<span class="status-badge-table badge-grounded-table">GROUNDED</span>':'<span class="status-badge-table badge-active-table">ACTIVE</span>')+'</td><td>'+(v.lastAudit||'—')+'</td></tr>').join('');
-    document.getElementById('v-table').innerHTML='<table class="data-table"><thead><tr>'+th+'</tr></thead><tbody>'+(tb||'<tr><td colspan="5" style="text-align:center;color:#aaa;padding:30px;">No matches</td></tr>')+'</tbody></table>';
+    const tb=f.map(v=>{
+        let row='<tr><td><strong>'+v.licensePlate+'</strong></td><td>'+v.vin+'</td><td>'+v.dsp+'</td>';
+        if(currentVehicleViewType==='active') row+='<td>'+(v.isGrounded?'<span class="status-badge-table badge-grounded-table">GROUNDED</span>':'<span class="status-badge-table badge-active-table">ACTIVE</span>')+'</td>';
+        if(currentVehicleViewType!=='to-audit') row+='<td>'+(v.lastAudit||'—')+'</td>';
+        row+='</tr>';
+        return row;
+    }).join('');
+    document.getElementById('v-table').innerHTML='<table class="data-table"><thead><tr>'+th+'</tr></thead><tbody>'+(tb||'<tr><td colspan="'+colCount+'" style="text-align:center;color:#aaa;padding:30px;">No matches</td></tr>')+'</tbody></table>';
 }
 function getVSV(v,c){switch(c){case'licensePlate':return v.licensePlate.toLowerCase();case'vin':return v.vin.toLowerCase();case'dsp':return v.dsp.toLowerCase();case'status':return v.isGrounded?'z':'a';case'lastAudit':return v.lastAudit||'';default:return'';}}
 function sortV(c){if(modalSortCol===c)modalSortDir=modalSortDir==='asc'?'desc':'asc';else{modalSortCol=c;modalSortDir='asc';}renderVehicleTable();}
 
+let currentAuditViewType='all';
 function viewAuditData(type){
+    currentAuditViewType=type;
     let data=[],title='';const today=new Date().toLocaleDateString();
-    switch(type){case'all':data=allAudits.slice();title='All Audits';break;case'passed':data=allAudits.filter(x=>x.result==='PASSED');title='Passed';break;case'failed':data=allAudits.filter(x=>x.result==='FAILED');title='Failed';break;case'today':data=allAudits.filter(x=>x.date===today);title="Today's Audits";break;}
+    switch(type){case'all':data=allAudits.slice();title='All Audits';break;case'passed':data=allAudits.filter(x=>x.result==='PASSED');title='Passed Audits (VAN OK)';break;case'failed':data=allAudits.filter(x=>x.result==='FAILED');title='Failed Audits (VSA BLOCK)';break;case'today':data=allAudits.filter(x=>x.date===today);title="Today's Audits";break;}
     if(!data.length){showModalEmpty(title,'No audits found.');return;}
     currentModalData=data;currentModalType='audit';modalSortCol=null;modalSortDir='asc';
     document.getElementById('modal-title').textContent=title;
     const dspSet=[...new Set(data.map(x=>x.dsp))].sort(),userSet=[...new Set(data.map(x=>x.user||'Unknown'))].sort();
-    document.getElementById('modal-body').innerHTML='<div class="modal-toolbar"><input class="search-input" type="text" id="a-search" placeholder="🔍 Search…" oninput="renderAuditTable()"><div class="toolbar-group"><span class="toolbar-label">Result</span><div class="ms-wrap" id="a-result"><button class="ms-pill" data-val="PASSED" onclick="togglePill(this,\'renderAuditTable\')">Passed</button><button class="ms-pill" data-val="FAILED" onclick="togglePill(this,\'renderAuditTable\')">Failed</button></div></div><div class="toolbar-group"><span class="toolbar-label">DSP</span><div class="ms-wrap" id="a-dsp">'+dspSet.map(d=>'<button class="ms-pill" data-val="'+d+'" onclick="togglePill(this,\'renderAuditTable\')">'+d+'</button>').join('')+'</div></div><div class="toolbar-group"><span class="toolbar-label">User</span><div class="ms-wrap" id="a-user">'+userSet.map(u=>'<button class="ms-pill" data-val="'+u+'" onclick="togglePill(this,\'renderAuditTable\')">'+u+'</button>').join('')+'</div></div><span class="modal-count" id="a-count">'+data.length+' audits</span></div><div id="a-table"></div>';
+    // Build toolbar — only show relevant filters
+    let toolbar='<div class="modal-toolbar"><input class="search-input" type="text" id="a-search" placeholder="🔍 Search…" oninput="renderAuditTable()">';
+    // Result filter only for 'all' and 'today' views
+    if(type==='all'||type==='today'){toolbar+='<div class="toolbar-group"><span class="toolbar-label">RESULT</span><div class="ms-wrap" id="a-result"><button class="ms-pill" data-val="PASSED" onclick="togglePill(this,\'renderAuditTable\')">Passed</button><button class="ms-pill" data-val="FAILED" onclick="togglePill(this,\'renderAuditTable\')">Failed</button></div></div>';}
+    // DSP filter only if multiple DSPs
+    if(dspSet.length>1){toolbar+='<div class="toolbar-group"><span class="toolbar-label">DSP</span><div class="ms-wrap" id="a-dsp">'+dspSet.map(d=>'<button class="ms-pill" data-val="'+d+'" onclick="togglePill(this,\'renderAuditTable\')">'+d+'</button>').join('')+'</div></div>';}
+    // User filter only if multiple users
+    if(userSet.length>1){toolbar+='<div class="toolbar-group"><span class="toolbar-label">USER</span><div class="ms-wrap" id="a-user">'+userSet.map(u=>'<button class="ms-pill" data-val="'+u+'" onclick="togglePill(this,\'renderAuditTable\')">'+u+'</button>').join('')+'</div></div>';}
+    toolbar+='<span class="modal-count" id="a-count">'+data.length+' audits</span></div>';
+    document.getElementById('modal-body').innerHTML=toolbar+'<div id="a-table"></div>';
     renderAuditTable();document.getElementById('data-modal').classList.add('show');
 }
 function renderAuditTable(){
-    const search=document.getElementById('a-search').value.toLowerCase(),results=getSelectedPills('a-result'),dsps=getSelectedPills('a-dsp'),users=getSelectedPills('a-user');
-    let f=currentModalData.filter(a=>{if(search&&!a.licensePlate.toLowerCase().includes(search)&&!a.vin.toLowerCase().includes(search))return false;if(results.length&&!results.includes(a.result))return false;if(dsps.length&&!dsps.includes(a.dsp))return false;if(users.length&&!users.includes(a.user||'Unknown'))return false;return true;});
+    const search=document.getElementById('a-search').value.toLowerCase();
+    const resultEl=document.getElementById('a-result'),dspEl=document.getElementById('a-dsp'),userEl=document.getElementById('a-user');
+    const results=resultEl?getSelectedPills('a-result'):[],dsps=dspEl?getSelectedPills('a-dsp'):[],users=userEl?getSelectedPills('a-user'):[];
+    let f=currentModalData.filter(a=>{if(search&&!a.licensePlate.toLowerCase().includes(search)&&!a.vin.toLowerCase().includes(search)&&!(a.problem||'').toLowerCase().includes(search))return false;if(results.length&&!results.includes(a.result))return false;if(dsps.length&&!dsps.includes(a.dsp))return false;if(users.length&&!users.includes(a.user||'Unknown'))return false;return true;});
     if(modalSortCol)f.sort((a,b)=>{let va=getASV(a,modalSortCol),vb=getASV(b,modalSortCol);return va<vb?(modalSortDir==='asc'?-1:1):va>vb?(modalSortDir==='asc'?1:-1):0;});
     document.getElementById('a-count').textContent=f.length+' audits';
-    const cols=[{k:'date',l:'Date'},{k:'time',l:'Time'},{k:'licensePlate',l:'Plate'},{k:'vin',l:'VIN'},{k:'dsp',l:'DSP'},{k:'result',l:'Result'},{k:'problem',l:'Problem'},{k:'user',l:'User'}];
+    // Columns depend on view type
+    let cols=[{k:'date',l:'Date'},{k:'time',l:'Time'},{k:'licensePlate',l:'Plate'},{k:'vin',l:'VIN'},{k:'dsp',l:'DSP'}];
+    if(currentAuditViewType==='all'||currentAuditViewType==='today') cols.push({k:'result',l:'Result'});
+    if(currentAuditViewType!=='passed') cols.push({k:'problem',l:'Problem'});
+    cols.push({k:'user',l:'User'});
+    const colCount=cols.length;
     const th=cols.map(c=>{let a='',cl='';if(modalSortCol===c.k){a=modalSortDir==='asc'?'▲':'▼';cl=' class="active-sort"';}return'<th'+cl+' onclick="sortA(\''+c.k+'\')">'+c.l+'<span class="sort-arrow">'+(a||'⇅')+'</span></th>';}).join('');
-    const tb=f.map(a=>'<tr><td>'+a.date+'</td><td>'+a.time+'</td><td><strong>'+a.licensePlate+'</strong></td><td>'+a.vin+'</td><td>'+a.dsp+'</td><td>'+(a.result==='PASSED'?'<span class="status-badge-table badge-passed-table">PASSED</span>':'<span class="status-badge-table badge-failed-table">FAILED</span>')+'</td><td>'+(a.problem||'—')+'</td><td>'+(a.user||'?')+'</td></tr>').join('');
-    document.getElementById('a-table').innerHTML='<table class="data-table"><thead><tr>'+th+'</tr></thead><tbody>'+(tb||'<tr><td colspan="8" style="text-align:center;color:#aaa;padding:30px;">No matches</td></tr>')+'</tbody></table>';
+    const tb=f.map(a=>{
+        let row='<tr><td>'+a.date+'</td><td>'+a.time+'</td><td><strong>'+a.licensePlate+'</strong></td><td>'+a.vin+'</td><td>'+a.dsp+'</td>';
+        if(currentAuditViewType==='all'||currentAuditViewType==='today') row+='<td>'+(a.result==='PASSED'?'<span class="status-badge-table badge-passed-table">PASSED</span>':'<span class="status-badge-table badge-failed-table">FAILED</span>')+'</td>';
+        if(currentAuditViewType!=='passed') row+='<td>'+(a.problem||'—')+'</td>';
+        row+='<td>'+(a.user||'?')+'</td></tr>';
+        return row;
+    }).join('');
+    document.getElementById('a-table').innerHTML='<table class="data-table"><thead><tr>'+th+'</tr></thead><tbody>'+(tb||'<tr><td colspan="'+colCount+'" style="text-align:center;color:#aaa;padding:30px;">No matches</td></tr>')+'</tbody></table>';
 }
 function getASV(a,c){switch(c){case'date':return a.date||'';case'time':return a.time||'';case'licensePlate':return a.licensePlate.toLowerCase();case'vin':return a.vin.toLowerCase();case'dsp':return a.dsp.toLowerCase();case'result':return a.result||'';case'problem':return(a.problem||'').toLowerCase();case'user':return(a.user||'').toLowerCase();default:return'';}}
 function sortA(c){if(modalSortCol===c)modalSortDir=modalSortDir==='asc'?'desc':'asc';else{modalSortCol=c;modalSortDir='asc';}renderAuditTable();}
@@ -850,8 +907,31 @@ function exportModalData(){
     const rows=document.querySelectorAll('.data-table tbody tr');if(!rows.length){alert('No data.');return;}
     const mTitle=document.getElementById('modal-title').textContent,date=new Date().toISOString().split('T')[0];let csv='',fn='';
     if(currentModalType==='manual'){fn='manually_added_'+date+'.csv';const h=['License Plate','DSP'];const search=document.getElementById('m-search')?document.getElementById('m-search').value.toLowerCase():'';let f=currentModalData.filter(v=>{if(search&&!v.licensePlate.toLowerCase().includes(search)&&!(v.dsp||'').toLowerCase().includes(search))return false;return true;});csv=[h,...f.map(v=>[v.licensePlate,v.dsp||'N/A'])].map(r=>r.map(c=>'"'+c+'"').join(',')).join('\n');}
-    else if(currentModalType==='vehicle'){fn='vehicles_'+mTitle.toLowerCase().replace(/[^a-z0-9]/g,'_')+'_'+date+'.csv';const h=['Plate','VIN','DSP','Status','Last Audit'],search=document.getElementById('v-search').value.toLowerCase(),dsps=getSelectedPills('v-dsp'),statuses=getSelectedPills('v-status');let f=currentModalData.filter(v=>{if(search&&!v.licensePlate.toLowerCase().includes(search)&&!v.vin.toLowerCase().includes(search))return false;if(dsps.length&&!dsps.includes(v.dsp))return false;if(statuses.length&&!statuses.some(s=>s==='active'?!v.isGrounded:s==='grounded'?v.isGrounded:s==='audited'?!!v.lastAudit:!v.lastAudit))return false;return true;});csv=[h,...f.map(v=>[v.licensePlate,v.vin,v.dsp,v.isGrounded?'GROUNDED':'ACTIVE',v.lastAudit||''])].map(r=>r.map(c=>'"'+c+'"').join(',')).join('\n');}
-    else{fn='audits_'+mTitle.toLowerCase().replace(/[^a-z0-9]/g,'_')+'_'+date+'.csv';const h=['Date','Time','Plate','VIN','DSP','Result','Problem','User'],search=document.getElementById('a-search').value.toLowerCase(),results=getSelectedPills('a-result'),dsps=getSelectedPills('a-dsp'),users=getSelectedPills('a-user');let f=currentModalData.filter(a=>{if(search&&!a.licensePlate.toLowerCase().includes(search)&&!a.vin.toLowerCase().includes(search))return false;if(results.length&&!results.includes(a.result))return false;if(dsps.length&&!dsps.includes(a.dsp))return false;if(users.length&&!users.includes(a.user||'Unknown'))return false;return true;});csv=[h,...f.map(a=>[a.date,a.time,a.licensePlate,a.vin,a.dsp,a.result,a.problem||'',a.user||''])].map(r=>r.map(c=>'"'+c+'"').join(',')).join('\n');}
+    else if(currentModalType==='vehicle'){fn='vehicles_'+mTitle.toLowerCase().replace(/[^a-z0-9]/g,'_')+'_'+date+'.csv';
+        let h=['Plate','VIN','DSP'];
+        if(currentVehicleViewType==='active') h.push('Status');
+        if(currentVehicleViewType!=='to-audit') h.push('Last Audit');
+        const search=document.getElementById('v-search').value.toLowerCase();
+        const dspEl=document.getElementById('v-dsp'),statusEl=document.getElementById('v-status');
+        const dsps=dspEl?getSelectedPills('v-dsp'):[],statuses=statusEl?getSelectedPills('v-status'):[];
+        let f=currentModalData.filter(v=>{if(search&&!v.licensePlate.toLowerCase().includes(search)&&!v.vin.toLowerCase().includes(search)&&!(v.dsp||'').toLowerCase().includes(search))return false;if(dsps.length&&!dsps.includes(v.dsp))return false;if(statuses.length&&!statuses.some(s=>s==='active'?!v.isGrounded:s==='grounded'?v.isGrounded:s==='audited'?!!v.lastAudit:!v.lastAudit))return false;return true;});
+        csv=[h,...f.map(v=>{let row=[v.licensePlate,v.vin,v.dsp];
+            if(currentVehicleViewType==='active') row.push(v.isGrounded?'GROUNDED':'ACTIVE');
+            if(currentVehicleViewType!=='to-audit') row.push(v.lastAudit||'');
+            return row;})].map(r=>r.map(c=>'"'+c+'"').join(',')).join('\n');}
+    else{const search=document.getElementById('a-search').value.toLowerCase();
+        const resultEl=document.getElementById('a-result'),dspEl=document.getElementById('a-dsp'),userEl=document.getElementById('a-user');
+        const results=resultEl?getSelectedPills('a-result'):[],dsps=dspEl?getSelectedPills('a-dsp'):[],users=userEl?getSelectedPills('a-user'):[];
+        let f=currentModalData.filter(a=>{if(search&&!a.licensePlate.toLowerCase().includes(search)&&!a.vin.toLowerCase().includes(search)&&!(a.problem||'').toLowerCase().includes(search))return false;if(results.length&&!results.includes(a.result))return false;if(dsps.length&&!dsps.includes(a.dsp))return false;if(users.length&&!users.includes(a.user||'Unknown'))return false;return true;});
+        let h=['Date','Time','Plate','VIN','DSP'];
+        if(currentAuditViewType==='all'||currentAuditViewType==='today') h.push('Result');
+        if(currentAuditViewType!=='passed') h.push('Problem');
+        h.push('User');
+        fn='audits_'+mTitle.toLowerCase().replace(/[^a-z0-9]/g,'_')+'_'+date+'.csv';
+        csv=[h,...f.map(a=>{let row=[a.date,a.time,a.licensePlate,a.vin,a.dsp];
+            if(currentAuditViewType==='all'||currentAuditViewType==='today') row.push(a.result);
+            if(currentAuditViewType!=='passed') row.push(a.problem||'');
+            row.push(a.user||'');return row;})].map(r=>r.map(c=>'"'+c+'"').join(',')).join('\n');}
     const blob=new Blob([csv],{type:'text/csv'}),url=URL.createObjectURL(blob),el=document.createElement('a');el.href=url;el.download=fn;el.click();
 }
 
