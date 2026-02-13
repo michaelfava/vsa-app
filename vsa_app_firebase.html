@@ -449,31 +449,25 @@ async function flushPendingAudits(){
 
 
 let vehicleDatabase=[],currentVehicle=null,auditResult=null,currentUser=null;
-let allAudits=[];  // always fresh via real-time listener
-let listenersAttached=false;
+let allAudits=[];
 
-function attachFirebaseListeners(){
-    if(listenersAttached)return;
-    listenersAttached=true;
-    // Real-time vehicle listener
-    database.ref('vehicles').on('value',function(snap){
-        const d=snap.val();
+// Single function to fetch ALL fresh data from Firebase
+async function fetchAllData(){
+    try{
+        const vSnap=await database.ref('vehicles').once('value');
+        const d=vSnap.val();
         vehicleDatabase=(d&&Array.isArray(d))?d:[];
-        console.log('🔄 Vehicles updated:',vehicleDatabase.length);
-        updateDatabaseStats();
-    });
-    // Real-time audit listener
-    database.ref('audits').on('value',function(snap){
+
+        const aSnap=await database.ref('audits').once('value');
         allAudits=[];
-        snap.forEach(c=>allAudits.push(c.val()));
-        console.log('🔄 Audits updated:',allAudits.length);
+        aSnap.forEach(c=>allAudits.push(c.val()));
+
+        console.log('📡 Fetched',vehicleDatabase.length,'vehicles,',allAudits.length,'audits');
+        updateDatabaseStats();
         updateReportStatsFromCache();
-    });
-}
-function detachFirebaseListeners(){
-    database.ref('vehicles').off();
-    database.ref('audits').off();
-    listenersAttached=false;
+    }catch(e){
+        console.error('Fetch error:',e);
+    }
 }
 
 document.addEventListener('DOMContentLoaded',function(){
@@ -513,14 +507,11 @@ function checkLoginStatus(){
     if(firebaseInitialized&&auth.currentUser){currentUser={username:auth.currentUser.email,uid:auth.currentUser.uid};loadVehicleDataFromFirebase().then(()=>{showPage('upload-page');updateFirebaseStatus('connected','Logged in as: '+auth.currentUser.email);setTimeout(flushPendingAudits,2000);});}
     else showPage('login-page');
 }
-function logout(){detachFirebaseListeners();if(auth)auth.signOut();currentUser=null;vehicleDatabase=[];allAudits=[];showPage('login-page');}
+function logout(){if(auth)auth.signOut();currentUser=null;vehicleDatabase=[];allAudits=[];showPage('login-page');}
 
 // FIREBASE DATA
 async function loadVehicleDataFromFirebase(){
-    attachFirebaseListeners();
-    // Do one forced read to make sure we have data immediately
-    try{const s=await database.ref('vehicles').once('value');const d=s.val();vehicleDatabase=(d&&Array.isArray(d))?d:[];updateDatabaseStats();}
-    catch(e){console.error(e);updateFirebaseStatus('error',e.message);}
+    await fetchAllData();
 }
 async function saveVehicleDataToFirebase(){
     try{showLoading('Saving...');await database.ref('vehicles').set(vehicleDatabase);hideLoading();updateFirebaseStatus('connected',vehicleDatabase.length+' vehicles synced');return true;}
@@ -557,8 +548,8 @@ function updateFirebaseStatus(status,detail=''){
 
 // NAV
 function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active');clearAllStatusMessages();
-    // Data is always fresh via real-time listeners, just refresh UI
-    updateDatabaseStats();updateReportStatsFromCache();
+    // Always fetch fresh data from Firebase on every tab switch
+    if(id!=='login-page') fetchAllData();
 }
 function toggleSection(id){const c=document.getElementById(id+'-content'),i=document.getElementById(id+'-icon');if(c.classList.contains('hidden')){c.classList.remove('hidden');i.classList.remove('collapsed');localStorage.setItem('section-'+id,'expanded');}else{c.classList.add('hidden');i.classList.add('collapsed');localStorage.setItem('section-'+id,'collapsed');}}
 function initializeCollapsibleSections(){['firebase-status','upload-files'].forEach(id=>{const s=localStorage.getItem('section-'+id),c=document.getElementById(id+'-content'),i=document.getElementById(id+'-icon');if(!c||!i)return;if(s==='collapsed'||(id==='upload-files'&&!s)){c.classList.add('hidden');i.classList.add('collapsed');}else if(s==='expanded'){c.classList.remove('hidden');i.classList.remove('collapsed');}});}
@@ -625,15 +616,15 @@ function updateAuditProgress(){
 }
 
 // DB CLEARING
-async function clearVehicleDatabase(){if(!window.confirm('Clear ALL vehicle data? Affects all users.'))return;try{showLoading('Clearing...');await database.ref('vehicles').remove();vehicleDatabase=[];hideLoading();updateDatabaseStats();showStatus('clear-status','✅ Vehicle database cleared.','success');}catch(e){hideLoading();showStatus('clear-status','❌ '+e.message,'error');}}
+async function clearVehicleDatabase(){if(!window.confirm('Clear ALL vehicle data? Affects all users.'))return;try{showLoading('Clearing...');await database.ref('vehicles').remove();vehicleDatabase=[];hideLoading();updateDatabaseStats();updateReportStatsFromCache();showStatus('clear-status','✅ Vehicle database cleared.','success');}catch(e){hideLoading();showStatus('clear-status','❌ '+e.message,'error');}}
 async function clearAuditDatabase(){if(!window.confirm('Clear ALL audit records and manually added vehicles? Affects all users.'))return;try{showLoading('Clearing...');await database.ref('audits').remove();
     // Also remove manually added vehicles
     vehicleDatabase=vehicleDatabase.filter(v=>!v.vin||!v.vin.startsWith('MANUAL-'));
     await database.ref('vehicles').set(vehicleDatabase);
     // Clear pending local queue too
-    setPendingAudits([]);
-    hideLoading();updateDatabaseStats();showStatus('clear-status','✅ Audit database and manually added vehicles cleared.','success');}catch(e){hideLoading();showStatus('clear-status','❌ '+e.message,'error');}}
-async function clearAllDatabases(){if(!window.confirm('⚠️ CLEAR EVERYTHING? Affects all users!'))return;if(!window.confirm('FINAL CONFIRMATION?'))return;const t=prompt('Type "DELETE ALL":');if(t!=='DELETE ALL'){alert('Cancelled.');return;}try{showLoading('Clearing...');await database.ref('vehicles').remove();await database.ref('audits').remove();vehicleDatabase=[];setPendingAudits([]);hideLoading();updateDatabaseStats();showStatus('clear-status','✅ Everything cleared.','success');}catch(e){hideLoading();showStatus('clear-status','❌ '+e.message,'error');}}
+    setPendingAudits([]);allAudits=[];
+    hideLoading();updateDatabaseStats();updateReportStatsFromCache();showStatus('clear-status','✅ Audit database and manually added vehicles cleared.','success');}catch(e){hideLoading();showStatus('clear-status','❌ '+e.message,'error');}}
+async function clearAllDatabases(){if(!window.confirm('⚠️ CLEAR EVERYTHING? Affects all users!'))return;if(!window.confirm('FINAL CONFIRMATION?'))return;const t=prompt('Type "DELETE ALL":');if(t!=='DELETE ALL'){alert('Cancelled.');return;}try{showLoading('Clearing...');await database.ref('vehicles').remove();await database.ref('audits').remove();vehicleDatabase=[];allAudits=[];setPendingAudits([]);hideLoading();updateDatabaseStats();updateReportStatsFromCache();showStatus('clear-status','✅ Everything cleared.','success');}catch(e){hideLoading();showStatus('clear-status','❌ '+e.message,'error');}}
 
 // AUTOCOMPLETE
 function handleAutocomplete(){
@@ -731,10 +722,12 @@ async function doSaveAudit(){
     const v=vehicleDatabase.find(x=>x.licensePlate===currentVehicle.licensePlate);
     if(v){
         v.lastAudit=audit.date;
-        // Persist vehicle update to Firebase (don't block on it)
         database.ref('vehicles').set(vehicleDatabase).catch(e=>console.error('Vehicle sync error:',e));
     }
+    // Also update local allAudits immediately so reports are fresh
+    allAudits.push(audit);
     updateDatabaseStats();
+    updateReportStatsFromCache();
     return saved==='queued'?'queued':true;
 }
 
