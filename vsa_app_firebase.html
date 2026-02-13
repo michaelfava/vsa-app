@@ -449,6 +449,32 @@ async function flushPendingAudits(){
 
 
 let vehicleDatabase=[],currentVehicle=null,auditResult=null,currentUser=null;
+let allAudits=[];  // always fresh via real-time listener
+let listenersAttached=false;
+
+function attachFirebaseListeners(){
+    if(listenersAttached)return;
+    listenersAttached=true;
+    // Real-time vehicle listener
+    database.ref('vehicles').on('value',function(snap){
+        const d=snap.val();
+        vehicleDatabase=(d&&Array.isArray(d))?d:[];
+        console.log('🔄 Vehicles updated:',vehicleDatabase.length);
+        updateDatabaseStats();
+    });
+    // Real-time audit listener
+    database.ref('audits').on('value',function(snap){
+        allAudits=[];
+        snap.forEach(c=>allAudits.push(c.val()));
+        console.log('🔄 Audits updated:',allAudits.length);
+        updateReportStatsFromCache();
+    });
+}
+function detachFirebaseListeners(){
+    database.ref('vehicles').off();
+    database.ref('audits').off();
+    listenersAttached=false;
+}
 
 document.addEventListener('DOMContentLoaded',function(){
     setupEventListeners();checkLoginStatus();initializeCollapsibleSections();
@@ -487,10 +513,12 @@ function checkLoginStatus(){
     if(firebaseInitialized&&auth.currentUser){currentUser={username:auth.currentUser.email,uid:auth.currentUser.uid};loadVehicleDataFromFirebase().then(()=>{showPage('upload-page');updateFirebaseStatus('connected','Logged in as: '+auth.currentUser.email);setTimeout(flushPendingAudits,2000);});}
     else showPage('login-page');
 }
-function logout(){if(auth)auth.signOut();currentUser=null;vehicleDatabase=[];showPage('login-page');}
+function logout(){detachFirebaseListeners();if(auth)auth.signOut();currentUser=null;vehicleDatabase=[];allAudits=[];showPage('login-page');}
 
 // FIREBASE DATA
 async function loadVehicleDataFromFirebase(){
+    attachFirebaseListeners();
+    // Do one forced read to make sure we have data immediately
     try{const s=await database.ref('vehicles').once('value');const d=s.val();vehicleDatabase=(d&&Array.isArray(d))?d:[];updateDatabaseStats();}
     catch(e){console.error(e);updateFirebaseStatus('error',e.message);}
 }
@@ -529,10 +557,8 @@ function updateFirebaseStatus(status,detail=''){
 
 // NAV
 function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active');clearAllStatusMessages();
-    // Always reload fresh data from Firebase on tab switch
-    if(id==='upload-page'){loadVehicleDataFromFirebase();}
-    else if(id==='download-page'){loadVehicleDataFromFirebase();updateReportStats();}
-    else if(id==='audit-page'){loadVehicleDataFromFirebase();}
+    // Data is always fresh via real-time listeners, just refresh UI
+    updateDatabaseStats();updateReportStatsFromCache();
 }
 function toggleSection(id){const c=document.getElementById(id+'-content'),i=document.getElementById(id+'-icon');if(c.classList.contains('hidden')){c.classList.remove('hidden');i.classList.remove('collapsed');localStorage.setItem('section-'+id,'expanded');}else{c.classList.add('hidden');i.classList.add('collapsed');localStorage.setItem('section-'+id,'collapsed');}}
 function initializeCollapsibleSections(){['firebase-status','upload-files'].forEach(id=>{const s=localStorage.getItem('section-'+id),c=document.getElementById(id+'-content'),i=document.getElementById(id+'-icon');if(!c||!i)return;if(s==='collapsed'||(id==='upload-files'&&!s)){c.classList.add('hidden');i.classList.add('collapsed');}else if(s==='expanded'){c.classList.remove('hidden');i.classList.remove('collapsed');}});}
@@ -712,8 +738,17 @@ async function doSaveAudit(){
     return saved==='queued'?'queued':true;
 }
 
-// REPORTS
-async function updateReportStats(){try{const s=await database.ref('audits').once('value');const a=[];s.forEach(c=>a.push(c.val()));const t=new Date().toLocaleDateString();document.getElementById('report-total-audits').textContent=a.length;document.getElementById('report-passed').textContent=a.filter(x=>x.result==='PASSED').length;document.getElementById('report-failed').textContent=a.filter(x=>x.result==='FAILED').length;document.getElementById('report-today').textContent=a.filter(x=>x.date===t).length;document.getElementById('report-manual').textContent=vehicleDatabase.filter(v=>v.vin&&v.vin.startsWith('MANUAL-')).length;}catch(e){console.error(e);}}
+// REPORTS — uses real-time allAudits cache
+function updateReportStatsFromCache(){
+    const a=allAudits,t=new Date().toLocaleDateString();
+    const el=id=>document.getElementById(id);
+    if(el('report-total-audits'))el('report-total-audits').textContent=a.length;
+    if(el('report-passed'))el('report-passed').textContent=a.filter(x=>x.result==='PASSED').length;
+    if(el('report-failed'))el('report-failed').textContent=a.filter(x=>x.result==='FAILED').length;
+    if(el('report-today'))el('report-today').textContent=a.filter(x=>x.date===t).length;
+    if(el('report-manual'))el('report-manual').textContent=vehicleDatabase.filter(v=>v.vin&&v.vin.startsWith('MANUAL-')).length;
+}
+function updateReportStats(){updateReportStatsFromCache();}
 async function downloadAllAudits(){await downloadAudits('all');}
 async function downloadPassedOnly(){await downloadAudits('passed');}
 async function downloadFailedOnly(){await downloadAudits('failed');}
@@ -726,14 +761,14 @@ function downloadManualVehicles(){
     const blob=new Blob([csv],{type:'text/csv'}),url=URL.createObjectURL(blob),el=document.createElement('a');el.href=url;el.download='manually_added_vehicles_'+new Date().toISOString().split('T')[0]+'.csv';el.click();
     showStatus('download-status','Downloaded '+manual.length+' manually added vehicles','success');
 }
-async function downloadAudits(type){
-    try{showLoading('Loading...');const s=await database.ref('audits').once('value');let a=[];s.forEach(c=>a.push(c.val()));
+function downloadAudits(type){
+    let a=allAudits.slice();
     if(type==='passed')a=a.filter(x=>x.result==='PASSED');else if(type==='failed')a=a.filter(x=>x.result==='FAILED');
-    hideLoading();if(!a.length){alert('No audits');return;}
+    if(!a.length){alert('No audits');return;}
     const h=['ID','Date','Time','Plate','VIN','DSP','Result','Problem','User'];
     const csv=[h,...a.map(x=>[x.id,x.date,x.time,x.licensePlate,x.vin,x.dsp,x.result,x.problem||'',x.user||''])].map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
     const blob=new Blob([csv],{type:'text/csv'});const url=URL.createObjectURL(blob);const el=document.createElement('a');el.href=url;el.download='vsa_audits_'+type+'_'+new Date().toISOString().split('T')[0]+'.csv';el.click();
-    showStatus('download-status','Downloaded '+a.length+' records','success');}catch(e){hideLoading();alert('Error: '+e.message);}
+    showStatus('download-status','Downloaded '+a.length+' records','success');
 }
 
 // UTILITY
@@ -774,16 +809,15 @@ function renderVehicleTable(){
 function getVSV(v,c){switch(c){case'licensePlate':return v.licensePlate.toLowerCase();case'vin':return v.vin.toLowerCase();case'dsp':return v.dsp.toLowerCase();case'status':return v.isGrounded?'z':'a';case'lastAudit':return v.lastAudit||'';default:return'';}}
 function sortV(c){if(modalSortCol===c)modalSortDir=modalSortDir==='asc'?'desc':'asc';else{modalSortCol=c;modalSortDir='asc';}renderVehicleTable();}
 
-async function viewAuditData(type){
-    try{showLoading('Loading…');const s=await database.ref('audits').once('value');let a=[];s.forEach(c=>a.push(c.val()));let data=[],title='';const today=new Date().toLocaleDateString();
-    switch(type){case'all':data=a;title='All Audits';break;case'passed':data=a.filter(x=>x.result==='PASSED');title='Passed';break;case'failed':data=a.filter(x=>x.result==='FAILED');title='Failed';break;case'today':data=a.filter(x=>x.date===today);title="Today's Audits";break;}
-    hideLoading();if(!data.length){showModalEmpty(title,'No audits found.');return;}
+function viewAuditData(type){
+    let data=[],title='';const today=new Date().toLocaleDateString();
+    switch(type){case'all':data=allAudits.slice();title='All Audits';break;case'passed':data=allAudits.filter(x=>x.result==='PASSED');title='Passed';break;case'failed':data=allAudits.filter(x=>x.result==='FAILED');title='Failed';break;case'today':data=allAudits.filter(x=>x.date===today);title="Today's Audits";break;}
+    if(!data.length){showModalEmpty(title,'No audits found.');return;}
     currentModalData=data;currentModalType='audit';modalSortCol=null;modalSortDir='asc';
     document.getElementById('modal-title').textContent=title;
     const dspSet=[...new Set(data.map(x=>x.dsp))].sort(),userSet=[...new Set(data.map(x=>x.user||'Unknown'))].sort();
     document.getElementById('modal-body').innerHTML='<div class="modal-toolbar"><input class="search-input" type="text" id="a-search" placeholder="🔍 Search…" oninput="renderAuditTable()"><div class="toolbar-group"><span class="toolbar-label">Result</span><div class="ms-wrap" id="a-result"><button class="ms-pill" data-val="PASSED" onclick="togglePill(this,\'renderAuditTable\')">Passed</button><button class="ms-pill" data-val="FAILED" onclick="togglePill(this,\'renderAuditTable\')">Failed</button></div></div><div class="toolbar-group"><span class="toolbar-label">DSP</span><div class="ms-wrap" id="a-dsp">'+dspSet.map(d=>'<button class="ms-pill" data-val="'+d+'" onclick="togglePill(this,\'renderAuditTable\')">'+d+'</button>').join('')+'</div></div><div class="toolbar-group"><span class="toolbar-label">User</span><div class="ms-wrap" id="a-user">'+userSet.map(u=>'<button class="ms-pill" data-val="'+u+'" onclick="togglePill(this,\'renderAuditTable\')">'+u+'</button>').join('')+'</div></div><span class="modal-count" id="a-count">'+data.length+' audits</span></div><div id="a-table"></div>';
     renderAuditTable();document.getElementById('data-modal').classList.add('show');
-    }catch(e){hideLoading();alert('Error: '+e.message);}
 }
 function renderAuditTable(){
     const search=document.getElementById('a-search').value.toLowerCase(),results=getSelectedPills('a-result'),dsps=getSelectedPills('a-dsp'),users=getSelectedPills('a-user');
