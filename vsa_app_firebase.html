@@ -528,7 +528,12 @@ function updateFirebaseStatus(status,detail=''){
 }
 
 // NAV
-function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active');clearAllStatusMessages();if(id==='upload-page')updateDatabaseStats();else if(id==='download-page')updateReportStats();}
+function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active');clearAllStatusMessages();
+    // Always reload fresh data from Firebase on tab switch
+    if(id==='upload-page'){loadVehicleDataFromFirebase();}
+    else if(id==='download-page'){loadVehicleDataFromFirebase();updateReportStats();}
+    else if(id==='audit-page'){loadVehicleDataFromFirebase();}
+}
 function toggleSection(id){const c=document.getElementById(id+'-content'),i=document.getElementById(id+'-icon');if(c.classList.contains('hidden')){c.classList.remove('hidden');i.classList.remove('collapsed');localStorage.setItem('section-'+id,'expanded');}else{c.classList.add('hidden');i.classList.add('collapsed');localStorage.setItem('section-'+id,'collapsed');}}
 function initializeCollapsibleSections(){['firebase-status','upload-files'].forEach(id=>{const s=localStorage.getItem('section-'+id),c=document.getElementById(id+'-content'),i=document.getElementById(id+'-icon');if(!c||!i)return;if(s==='collapsed'||(id==='upload-files'&&!s)){c.classList.add('hidden');i.classList.add('collapsed');}else if(s==='expanded'){c.classList.remove('hidden');i.classList.remove('collapsed');}});}
 function clearAllStatusMessages(){['upload-status','clear-status','download-status'].forEach(id=>{const el=document.getElementById(id);if(el){el.style.display='none';el.textContent='';el.className='status-message';}});}
@@ -595,8 +600,14 @@ function updateAuditProgress(){
 
 // DB CLEARING
 async function clearVehicleDatabase(){if(!window.confirm('Clear ALL vehicle data? Affects all users.'))return;try{showLoading('Clearing...');await database.ref('vehicles').remove();vehicleDatabase=[];hideLoading();updateDatabaseStats();showStatus('clear-status','✅ Vehicle database cleared.','success');}catch(e){hideLoading();showStatus('clear-status','❌ '+e.message,'error');}}
-async function clearAuditDatabase(){if(!window.confirm('Clear ALL audit records? Affects all users.'))return;try{showLoading('Clearing...');await database.ref('audits').remove();hideLoading();showStatus('clear-status','✅ Audit database cleared.','success');if(document.getElementById('download-page').classList.contains('active'))updateReportStats();}catch(e){hideLoading();showStatus('clear-status','❌ '+e.message,'error');}}
-async function clearAllDatabases(){if(!window.confirm('⚠️ CLEAR EVERYTHING? Affects all users!'))return;if(!window.confirm('FINAL CONFIRMATION?'))return;const t=prompt('Type "DELETE ALL":');if(t!=='DELETE ALL'){alert('Cancelled.');return;}try{showLoading('Clearing...');await database.ref('vehicles').remove();await database.ref('audits').remove();vehicleDatabase=[];hideLoading();updateDatabaseStats();showStatus('clear-status','✅ Everything cleared.','success');}catch(e){hideLoading();showStatus('clear-status','❌ '+e.message,'error');}}
+async function clearAuditDatabase(){if(!window.confirm('Clear ALL audit records and manually added vehicles? Affects all users.'))return;try{showLoading('Clearing...');await database.ref('audits').remove();
+    // Also remove manually added vehicles
+    vehicleDatabase=vehicleDatabase.filter(v=>!v.vin||!v.vin.startsWith('MANUAL-'));
+    await database.ref('vehicles').set(vehicleDatabase);
+    // Clear pending local queue too
+    setPendingAudits([]);
+    hideLoading();updateDatabaseStats();showStatus('clear-status','✅ Audit database and manually added vehicles cleared.','success');}catch(e){hideLoading();showStatus('clear-status','❌ '+e.message,'error');}}
+async function clearAllDatabases(){if(!window.confirm('⚠️ CLEAR EVERYTHING? Affects all users!'))return;if(!window.confirm('FINAL CONFIRMATION?'))return;const t=prompt('Type "DELETE ALL":');if(t!=='DELETE ALL'){alert('Cancelled.');return;}try{showLoading('Clearing...');await database.ref('vehicles').remove();await database.ref('audits').remove();vehicleDatabase=[];setPendingAudits([]);hideLoading();updateDatabaseStats();showStatus('clear-status','✅ Everything cleared.','success');}catch(e){hideLoading();showStatus('clear-status','❌ '+e.message,'error');}}
 
 // AUTOCOMPLETE
 function handleAutocomplete(){
