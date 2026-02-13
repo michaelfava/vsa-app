@@ -123,6 +123,17 @@
         .qr-saved-msg{width:100%;max-width:360px;background:rgba(40,167,69,0.15);border:2px solid #28a745;border-radius:12px;padding:16px;text-align:center;display:none;animation:fadeInUp 0.3s ease}
         .qr-saved-msg.show{display:block}
         .qr-saved-msg span{font-size:18px;font-weight:bold;color:#28a745}
+        .source-link{display:flex;align-items:center;gap:14px;padding:14px 18px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;margin-bottom:10px;text-decoration:none;color:#fff;transition:all 0.2s}
+        .source-link:hover{background:rgba(255,153,0,0.1);border-color:#FF9900;transform:translateY(-1px)}
+        .source-link-icon{font-size:28px;flex-shrink:0}
+        .source-link-text{flex:1}
+        .source-link-text strong{display:block;font-size:15px;margin-bottom:2px}
+        .source-link-text span{font-size:12px;color:#aaa}
+        .source-link-arrow{font-size:20px;color:#FF9900;flex-shrink:0}
+        .global-toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-100px);z-index:30000;padding:14px 28px;border-radius:12px;font-size:16px;font-weight:bold;pointer-events:none;opacity:0;transition:all 0.4s ease}
+        .global-toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+        .global-toast.success{background:#28a745;color:#fff;box-shadow:0 4px 20px rgba(40,167,69,0.4)}
+        .global-toast.error{background:#dc3545;color:#fff;box-shadow:0 4px 20px rgba(220,53,69,0.4)}
 
         @keyframes fadeInUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
         @keyframes pulseGlow{0%,100%{box-shadow:0 0 10px rgba(255,193,7,0.5)}50%{box-shadow:0 0 20px rgba(255,193,7,0.8)}}
@@ -230,6 +241,7 @@
     </style>
 </head>
 <body>
+    <div class="global-toast" id="global-toast"></div>
     <div class="loading-overlay" id="loading-overlay"><div><div class="spinner"></div><div class="loading-text" id="loading-text">Processing...</div></div></div>
 
     <!-- LOGIN -->
@@ -258,6 +270,36 @@
             <div class="collapsible-header" onclick="toggleSection('firebase-status')"><h3>🔗 Connection Status</h3><span class="collapse-icon" id="firebase-status-icon">▼</span></div>
             <div id="firebase-status-content" class="collapsible-content">
                 <div id="firebase-status" class="firebase-status"><div style="display:flex;align-items:center;gap:10px;"><span id="firebase-icon" style="font-size:24px;">🔴</span><div><div id="firebase-text" style="font-weight:bold;"></div><div id="firebase-detail" style="font-size:12px;margin-top:5px;"></div></div></div></div>
+            </div>
+        </div>
+        <div class="upload-section">
+            <div class="collapsible-header" onclick="toggleSection('source-links')"><h3>🔗 Download Source Data</h3><span class="collapse-icon" id="source-links-icon">▼</span></div>
+            <div id="source-links-content" class="collapsible-content">
+                <p style="color:#aaa;margin-bottom:15px;">Open these dashboards to download the required files</p>
+                <a id="link-expected-vehicles" href="#" target="_blank" class="source-link" onclick="this.href=buildPerfectMileLink()">
+                    <span class="source-link-icon">📄</span>
+                    <div class="source-link-text">
+                        <strong>Expected Vehicles (Active) CSV</strong>
+                        <span>PerfectMile Dashboard — opens with today's date</span>
+                    </div>
+                    <span class="source-link-arrow">↗</span>
+                </a>
+                <a href="https://us-east-1.quicksight.aws.amazon.com/sn/dashboards/75fc476b-a22d-40c8-a048-afad96f93e4d/sheets/75fc476b-a22d-40c8-a048-afad96f93e4d_ac58a486-19e3-4a3e-9685-6220f3bf38e1" target="_blank" class="source-link">
+                    <span class="source-link-icon">📋</span>
+                    <div class="source-link-text">
+                        <strong>VIN Audit Detail XLSX</strong>
+                        <span>QuickSight Dashboard</span>
+                    </div>
+                    <span class="source-link-arrow">↗</span>
+                </a>
+                <a href="https://us-east-1.quicksight.aws.amazon.com/sn/dashboards/75fc476b-a22d-40c8-a048-afad96f93e4d/sheets/75fc476b-a22d-40c8-a048-afad96f93e4d_ac58a486-19e3-4a3e-9685-6220f3bf38e1" target="_blank" class="source-link">
+                    <span class="source-link-icon">🚫</span>
+                    <div class="source-link-text">
+                        <strong>Current Grounded Vehicle XLSX</strong>
+                        <span>QuickSight Dashboard</span>
+                    </div>
+                    <span class="source-link-arrow">↗</span>
+                </a>
             </div>
         </div>
         <div class="upload-section">
@@ -575,7 +617,24 @@ function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.
     if(id!=='login-page') fetchAllData();
 }
 function toggleSection(id){const c=document.getElementById(id+'-content'),i=document.getElementById(id+'-icon');if(c.classList.contains('hidden')){c.classList.remove('hidden');i.classList.remove('collapsed');localStorage.setItem('section-'+id,'expanded');}else{c.classList.add('hidden');i.classList.add('collapsed');localStorage.setItem('section-'+id,'collapsed');}}
-function initializeCollapsibleSections(){['firebase-status','upload-files'].forEach(id=>{const s=localStorage.getItem('section-'+id),c=document.getElementById(id+'-content'),i=document.getElementById(id+'-icon');if(!c||!i)return;if(s==='collapsed'||(id==='upload-files'&&!s)){c.classList.add('hidden');i.classList.add('collapsed');}else if(s==='expanded'){c.classList.remove('hidden');i.classList.remove('collapsed');}});}
+function initializeCollapsibleSections(){['firebase-status','upload-files','source-links'].forEach(id=>{const s=localStorage.getItem('section-'+id),c=document.getElementById(id+'-content'),i=document.getElementById(id+'-icon');if(!c||!i)return;if(s==='collapsed'||(id==='upload-files'&&!s)){c.classList.add('hidden');i.classList.add('collapsed');}else if(s==='expanded'){c.classList.remove('hidden');i.classList.remove('collapsed');}});}
+
+function buildPerfectMileLink(){
+    const d=new Date(),y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');
+    const dateStr=y+'-'+m+'-'+day;
+    return 'https://perfectmile.amazon.com/dashboards/47020/region/EU/daily?tab=390144&start-date='+dateStr+'&end-date='+dateStr+'&filter-in-location=%5BDPI2%5D';
+}
+
+let toastTimer=null;
+function showToast(msg,type='success'){
+    const el=document.getElementById('global-toast');
+    el.textContent=msg;el.className='global-toast '+type;
+    // Trigger reflow for re-animation
+    void el.offsetWidth;
+    el.classList.add('show');
+    if(toastTimer)clearTimeout(toastTimer);
+    toastTimer=setTimeout(()=>{el.classList.remove('show');},2500);
+}
 function clearAllStatusMessages(){['upload-status','clear-status','download-status'].forEach(id=>{const el=document.getElementById(id);if(el){el.style.display='none';el.textContent='';el.className='status-message';}});}
 
 // FILE UPLOAD
@@ -589,7 +648,7 @@ function handleFileSelect(input,type){
     }
     const n=document.getElementById(type+'-name');
     if(ok){uploadedFiles[type]=file;n.innerHTML='✅ '+file.name;n.style.color='#28a745';}
-    else{uploadedFiles[type]=null;input.value='';n.innerHTML=err;n.style.color='#dc3545';alert(err+'\n\nFile: '+file.name);}
+    else{uploadedFiles[type]=null;input.value='';n.innerHTML=err;n.style.color='#dc3545';showToast(err+' — '+file.name,'error');}
 }
 async function processFiles(){
     if(!uploadedFiles['dive-deep']||!uploadedFiles['vin-audit']||!uploadedFiles['grounded']){showStatus('upload-status','⚠️ Upload all three files.','error');return;}
@@ -645,7 +704,7 @@ async function clearAuditDatabase(){if(!window.confirm('Clear ALL audit records 
     await fbPut('/vehicles',vehicleDatabase);
     setPendingAudits([]);allAudits=[];
     hideLoading();updateDatabaseStats();updateReportStatsFromCache();showStatus('clear-status','✅ Audit database and manually added vehicles cleared.','success');}catch(e){hideLoading();showStatus('clear-status','❌ '+e.message,'error');}}
-async function clearAllDatabases(){if(!window.confirm('⚠️ CLEAR EVERYTHING? Affects all users!'))return;if(!window.confirm('FINAL CONFIRMATION?'))return;const t=prompt('Type "DELETE ALL":');if(t!=='DELETE ALL'){alert('Cancelled.');return;}try{showLoading('Clearing...');await fbDelete('/vehicles');await fbDelete('/audits');vehicleDatabase=[];allAudits=[];setPendingAudits([]);hideLoading();updateDatabaseStats();updateReportStatsFromCache();showStatus('clear-status','✅ Everything cleared.','success');}catch(e){hideLoading();showStatus('clear-status','❌ '+e.message,'error');}}
+async function clearAllDatabases(){if(!window.confirm('⚠️ CLEAR EVERYTHING? Affects all users!'))return;if(!window.confirm('FINAL CONFIRMATION?'))return;const t=prompt('Type "DELETE ALL":');if(t!=='DELETE ALL'){showToast('Cancelled','error');return;}try{showLoading('Clearing...');await fbDelete('/vehicles');await fbDelete('/audits');vehicleDatabase=[];allAudits=[];setPendingAudits([]);hideLoading();updateDatabaseStats();updateReportStatsFromCache();showStatus('clear-status','✅ Everything cleared.','success');}catch(e){hideLoading();showStatus('clear-status','❌ '+e.message,'error');}}
 
 // AUTOCOMPLETE
 function handleAutocomplete(){
@@ -672,11 +731,11 @@ function searchVehicle(){
 // ADD NEW VEHICLE
 async function saveNewVehicle(){
     const plate=document.getElementById('add-plate').value.toUpperCase().trim(),dsp=document.getElementById('add-dsp').value.trim();
-    if(!plate){alert('No plate');return;}
+    if(!plate){showToast('No plate entered','error');return;}
     const nv={vin:'MANUAL-'+plate+'-'+Date.now(),licensePlate:plate,dsp:dsp||'N/A',status:'Active',isGrounded:false,lastAudit:null};
     vehicleDatabase.push(nv);showLoading('Adding...');const saved=await saveVehicleDataToFirebase();hideLoading();
-    if(saved){document.getElementById('add-vehicle-card').classList.remove('show');updateDatabaseStats();document.getElementById('license-plate-input').value='';alert('✅ Vehicle '+plate+' added to database');}
-    else{vehicleDatabase.pop();alert('⚠️ Cloud save failed');}
+    if(saved){document.getElementById('add-vehicle-card').classList.remove('show');updateDatabaseStats();document.getElementById('license-plate-input').value='';document.getElementById('license-plate-input').focus();showToast('✅ Vehicle '+plate+' added to database');}
+    else{vehicleDatabase.pop();showToast('⚠️ Cloud save failed','error');}
 }
 function cancelAddVehicle(){document.getElementById('add-vehicle-card').classList.remove('show');document.getElementById('license-plate-input').value='';document.getElementById('license-plate-input').focus();}
 
@@ -726,7 +785,7 @@ function vsaBlock(){
 }
 async function submitBlock(){
     const p=document.getElementById('problem-description').value.trim();
-    if(!p){alert('Please describe the problem');return;}
+    if(!p){showToast('Please describe the problem','error');return;}
     auditResult={result:'FAILED',problem:p};
     // Don't hide problem area yet — wait for save confirmation
     const saved=await doSaveAudit();
@@ -738,7 +797,7 @@ async function doSaveAudit(){
     if(!currentVehicle||!auditResult)return false;
     const audit={id:Date.now(),vin:currentVehicle.vin,licensePlate:currentVehicle.licensePlate,dsp:currentVehicle.dsp,result:auditResult.result,problem:auditResult.problem,timestamp:new Date().toISOString(),date:new Date().toLocaleDateString(),time:new Date().toLocaleTimeString(),user:currentUser?currentUser.username:'unknown'};
     const saved=await saveAuditToFirebase(audit);
-    if(saved===false){alert('⚠️ Cloud save failed. Try again.');return false;}
+    if(saved===false){showToast('⚠️ Cloud save failed. Try again.','error');return false;}
     // Update local vehicle record
     const v=vehicleDatabase.find(x=>x.licensePlate===currentVehicle.licensePlate);
     if(v){
@@ -768,7 +827,7 @@ async function downloadPassedOnly(){await downloadAudits('passed');}
 async function downloadFailedOnly(){await downloadAudits('failed');}
 function downloadManualVehicles(){
     const manual=vehicleDatabase.filter(v=>v.vin&&v.vin.startsWith('MANUAL-'));
-    if(!manual.length){alert('No manually added vehicles');return;}
+    if(!manual.length){showToast('No manually added vehicles','error');return;}
     const h=['License Plate','DSP'];
     const rows=manual.map(v=>[v.licensePlate,v.dsp||'N/A']);
     const csv=[h,...rows].map(r=>r.map(c=>'"'+c+'"').join(',')).join('\n');
@@ -778,7 +837,7 @@ function downloadManualVehicles(){
 function downloadAudits(type){
     let a=allAudits.slice();
     if(type==='passed')a=a.filter(x=>x.result==='PASSED');else if(type==='failed')a=a.filter(x=>x.result==='FAILED');
-    if(!a.length){alert('No audits');return;}
+    if(!a.length){showToast('No audits to download','error');return;}
     const h=['ID','Date','Time','Plate','VIN','DSP','Result','Problem','User'];
     const csv=[h,...a.map(x=>[x.id,x.date,x.time,x.licensePlate,x.vin,x.dsp,x.result,x.problem||'',x.user||''])].map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
     const blob=new Blob([csv],{type:'text/csv'});const url=URL.createObjectURL(blob);const el=document.createElement('a');el.href=url;el.download='vsa_audits_'+type+'_'+new Date().toISOString().split('T')[0]+'.csv';el.click();
@@ -904,7 +963,7 @@ function sortManual(c){if(modalSortCol===c)modalSortDir=modalSortDir==='asc'?'de
 function showModalEmpty(title,msg){document.getElementById('modal-title').textContent=title;document.getElementById('modal-body').innerHTML='<div class="empty-data"><p>'+msg+'</p></div>';document.getElementById('data-modal').classList.add('show');}
 
 function exportModalData(){
-    const rows=document.querySelectorAll('.data-table tbody tr');if(!rows.length){alert('No data.');return;}
+    const rows=document.querySelectorAll('.data-table tbody tr');if(!rows.length){showToast('No data to export','error');return;}
     const mTitle=document.getElementById('modal-title').textContent,date=new Date().toISOString().split('T')[0];let csv='',fn='';
     if(currentModalType==='manual'){fn='manually_added_'+date+'.csv';const h=['License Plate','DSP'];const search=document.getElementById('m-search')?document.getElementById('m-search').value.toLowerCase():'';let f=currentModalData.filter(v=>{if(search&&!v.licensePlate.toLowerCase().includes(search)&&!(v.dsp||'').toLowerCase().includes(search))return false;return true;});csv=[h,...f.map(v=>[v.licensePlate,v.dsp||'N/A'])].map(r=>r.map(c=>'"'+c+'"').join(',')).join('\n');}
     else if(currentModalType==='vehicle'){fn='vehicles_'+mTitle.toLowerCase().replace(/[^a-z0-9]/g,'_')+'_'+date+'.csv';
