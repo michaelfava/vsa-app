@@ -451,18 +451,27 @@ async function flushPendingAudits(){
 let vehicleDatabase=[],currentVehicle=null,auditResult=null,currentUser=null;
 let allAudits=[];
 
-// Single function to fetch ALL fresh data from Firebase
+// Single function to fetch ALL fresh data from Firebase via REST API (bypasses SDK cache)
+const FIREBASE_DB_URL='https://vsa-app-13a1f-default-rtdb.europe-west1.firebasedatabase.app';
+
 async function fetchAllData(){
     try{
-        const vSnap=await database.ref('vehicles').once('value');
-        const d=vSnap.val();
-        vehicleDatabase=(d&&Array.isArray(d))?d:[];
+        const token=await auth.currentUser.getIdToken();
+        const headers={'Authorization':'Bearer '+token};
 
-        const aSnap=await database.ref('audits').once('value');
+        const [vRes,aRes]=await Promise.all([
+            fetch(FIREBASE_DB_URL+'/vehicles.json?auth='+token),
+            fetch(FIREBASE_DB_URL+'/audits.json?auth='+token)
+        ]);
+
+        const vData=await vRes.json();
+        vehicleDatabase=(vData&&Array.isArray(vData))?vData:[];
+
+        const aData=await aRes.json();
         allAudits=[];
-        aSnap.forEach(c=>allAudits.push(c.val()));
+        if(aData){Object.values(aData).forEach(a=>allAudits.push(a));}
 
-        console.log('📡 Fetched',vehicleDatabase.length,'vehicles,',allAudits.length,'audits');
+        console.log('📡 REST fetch:',vehicleDatabase.length,'vehicles,',allAudits.length,'audits');
         updateDatabaseStats();
         updateReportStatsFromCache();
     }catch(e){
